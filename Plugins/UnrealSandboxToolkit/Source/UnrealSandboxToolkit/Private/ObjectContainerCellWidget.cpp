@@ -5,172 +5,131 @@
 #include "SandboxObject.h"
 #include "SandboxPlayerController.h"
 
+// Цвет рамки слота (как подсветка выбранного кармана)
 FLinearColor USandboxObjectContainerCellWidget::SlotBorderColor(int32 SlotId) {
-	if (ContainerName == TEXT("Inventory")) { 	//TODO fix
-		ASandboxPlayerController* PlayerController = Cast<ASandboxPlayerController>(GetOwningPlayer());
-		if (PlayerController) {
-			if (PlayerController->CurrentInventorySlot == SlotId) {
-				return FLinearColor(0.1, 0.4, 1, 1);
-		}
-	}
-}
-	return FLinearColor(0, 0, 0, 0.5);
+    if (ContainerName == TEXT("Inventory")) { // Если это инвентарь игрока
+        ASandboxPlayerController* PlayerController = Cast<ASandboxPlayerController>(GetOwningPlayer());
+        if (PlayerController) {
+            // Если это текущий выбранный слот - красим в синий
+            if (PlayerController->CurrentInventorySlot == SlotId) {
+                return FLinearColor(0.1, 0.4, 1, 1); // Синий цвет выделения
+            }
+        }
+    }
+    return FLinearColor(0, 0, 0, 0.5); // Стандартный полупрозрачный черный
 }
 
+// Текст количества предметов (например "5" для 5 яблок)
 FString USandboxObjectContainerCellWidget::SlotGetAmountText(int32 SlotId) {
-	UContainerComponent* Container = GetContainer();
-	if (Container != NULL) {
-		const FContainerStack* Stack = Container->GetSlot(SlotId);
-		if (Stack != NULL) {
-			if (Stack->GetObject() != nullptr) {
-				const ASandboxObject* DefaultObject = Cast<ASandboxObject>(Stack->GetObject());
-				if (DefaultObject != nullptr) {
-					if (!DefaultObject->bStackable) {
-						return TEXT("");
-					}
-				}
-
-				if (Stack->Amount > 0) {
-					return FString::Printf(TEXT("%d"), Stack->Amount);
-				}
-			}
-		}
-	}
-
-	return TEXT("");
+    UContainerComponent* Container = GetContainer();
+    if (Container) {
+        const FContainerStack* Stack = Container->GetSlot(SlotId);
+        if (Stack && Stack->Amount > 0) {
+            // Если предмет нельзя стакать (например меч) - не показываем цифру
+            if (Stack->GetObject() && !Stack->GetObject()->bStackable) {
+                return TEXT(""); 
+            }
+            return FString::Printf(TEXT("%d"), Stack->Amount); // Превращаем число в текст
+        }
+    }
+    return TEXT(""); // Пустая строка если слот пуст
 }
 
+// Это внешний контейнер? (типа сундука, а не инвентаря)
 bool USandboxObjectContainerCellWidget::IsExternal() {
-	return CellBinding == EContainerCellBinding::ExternalObject;
+    return CellBinding == EContainerCellBinding::ExternalObject; 
 }
 
+// Получить контейнер (как найти нужный ящик с вещами)
 UContainerComponent* USandboxObjectContainerCellWidget::GetContainer() {
-	if (IsExternal()) {
-		ASandboxPlayerController* SandboxPC = Cast<ASandboxPlayerController>(GetOwningPlayer());
-		if (SandboxPC) {
-			return SandboxPC->GetOpenedContainer();
-		}
-	} else {
-		APawn* Pawn = GetOwningPlayer()->GetPawn();
-		if (Pawn) {
-			TArray<UContainerComponent*> Components;
-			Pawn->GetComponents<UContainerComponent>(Components);
-
-			for (UContainerComponent* Container : Components) {
-				if (Container->GetName().Equals(ContainerName.ToString())) {
-					return Container;
-				}
-			}
-		}
-	}
-
-	return nullptr;
+    if (IsExternal()) { // Если это сундук/ящик
+        ASandboxPlayerController* SandboxPC = Cast<ASandboxPlayerController>(GetOwningPlayer());
+        if (SandboxPC) {
+            return SandboxPC->GetOpenedContainer(); // Берем открытый контейнер
+        }
+    } else { // Если это инвентарь игрока
+        APawn* Pawn = GetOwningPlayer()->GetPawn();
+        if (Pawn) {
+            // Ищем компонент-контейнер у персонажа по имени
+            TArray<UContainerComponent*> Components;
+            Pawn->GetComponents<UContainerComponent>(Components);
+            
+            for (UContainerComponent* Container : Components) {
+                if (Container->GetName().Equals(ContainerName.ToString())) {
+                    return Container; // Нашли нужный контейнер
+                }
+            }
+        }
+    }
+    return nullptr; // Ничего не нашли
 }
 
+// Получить иконку предмета в слоте (как миниатюра предмета)
 UTexture2D* USandboxObjectContainerCellWidget::GetSlotTexture(int32 SlotId) {
-	
-	UContainerComponent* Container = GetContainer();
-	if (Container != nullptr) {
-		const FContainerStack* Stack = Container->GetSlot(SlotId);
-		if (Stack != nullptr) {
-			if (Stack->Amount > 0) {
-				if (Stack->GetObject() != nullptr) {
-					const ASandboxObject* DefaultObject = Cast<ASandboxObject>(Stack->GetObject());
-					if (DefaultObject != nullptr) {
-						return DefaultObject->IconTexture;
-					}
-				}
-			}
-		}
-	}
-	
-	return nullptr;
+    UContainerComponent* Container = GetContainer();
+    if (Container) {
+        const FContainerStack* Stack = Container->GetSlot(SlotId);
+        if (Stack && Stack->Amount > 0) {
+            const ASandboxObject* DefaultObject = Cast<ASandboxObject>(Stack->GetObject());
+            if (DefaultObject) {
+                return DefaultObject->IconTexture; // Берем текстуру из настроек предмета
+            }
+        }
+    }
+    return nullptr; // Нет текстуры
 }
 
+// Клик по слоту (как нажатие на ячейку мышкой)
 void USandboxObjectContainerCellWidget::SelectSlot(int32 SlotId) {
-	UE_LOG(LogTemp, Log, TEXT("SelectSlot: %d"), SlotId);
+    UE_LOG(LogTemp, Log, TEXT("SelectSlot: %d"), SlotId);
 }
 
+// Наведение курсора на слот (как подсветка при наведении)
 void USandboxObjectContainerCellWidget::HoverSlot(int32 SlotId) {
-
-	ASandboxPlayerController* LocalController = Cast<ASandboxPlayerController>(UGameplayStatics::GetPlayerController(GetWorld(), 0));
-	if (LocalController) {
-		int32 Sid = -1;
-
-		UContainerComponent* Container = GetContainer();
-		if (Container != nullptr) {
-			const FContainerStack* Stack = Container->GetSlot(SlotId);
-			if (Stack != nullptr && Stack->Amount > 0) {
-				Sid = SlotId;
-			}
-		}
-
-		LocalController->OnContainerSlotHover(Sid, *Container->GetName());
-	} 
-
+    ASandboxPlayerController* LocalController = Cast<ASandboxPlayerController>(UGameplayStatics::GetPlayerController(GetWorld(), 0));
+    if (LocalController) {
+        LocalController->OnContainerSlotHover(SlotId, *Container->GetName()); // Говорим контроллеру о наведении
+    }
 }
 
-bool USandboxObjectContainerCellWidget::SlotDrop(int32 SlotDropId, int32 SlotTargetId, AActor* SourceActor, UContainerComponent* SourceContainer, bool bOnlyOne) {
-	bool bResult = SlotDropInternal(SlotDropId, SlotTargetId, SourceActor, SourceContainer, bOnlyOne);
-	if (bResult) {
-		ASandboxPlayerController* LocalController = Cast<ASandboxPlayerController>(UGameplayStatics::GetPlayerController(GetWorld(), 0));
-		if (LocalController && LocalController->GetNetMode() != NM_Client) {
-			const FString TargetContainerName = GetContainer()->GetName();
-			const FString SourceContainerName = SourceContainer->GetName();
-			LocalController->OnContainerDropSuccess(SlotTargetId, *SourceContainerName, *TargetContainerName);
-		}
-	}
-
-	return bResult;
+// Перенос предмета между слотами (как перетаскивание вещи)
+bool USandboxObjectContainerCellWidget::SlotDrop(...) {
+    // Пытаемся перенести
+    bool bResult = SlotDropInternal(...); 
+    
+    // Если успешно и мы на сервере
+    if (bResult && LocalController->GetNetMode() != NM_Client) {
+        // Сообщаем об успешном переносе
+        LocalController->OnContainerDropSuccess(...);
+    }
+    return bResult;
 }
 
-bool USandboxObjectContainerCellWidget::SlotDropInternal(int32 SlotDropId, int32 SlotTargetId, AActor* SourceActor, UContainerComponent* SourceContainer, bool bOnlyOne) {
-	UE_LOG(LogTemp, Log, TEXT("UI cell drop: drop id -> %d ---> target id -> %d"), SlotDropId, SlotTargetId);
-
-	if (SourceContainer == nullptr) {
-		return false;
-	}
-
-	if (SourceActor == nullptr) {
-		return false;
-	}
-
-	UContainerComponent* TargetContainer = GetContainer();
-	if (!TargetContainer) {
-		return false;
-	}
-
-	if (SlotDropId == SlotTargetId && TargetContainer == SourceContainer) {
-		return false;
-	}
-
-	return TargetContainer->SlotTransfer(SlotDropId, SlotTargetId, SourceActor, SourceContainer, bOnlyOne);
+// Внутренняя логика переноса предмета
+bool USandboxObjectContainerCellWidget::SlotDropInternal(...) {
+    // Нельзя переносить в тот же слот того же контейнера
+    if (SlotDropId == SlotTargetId && TargetContainer == SourceContainer) {
+        return false;
+    }
+    
+    // Вызываем основную логику переноса из контейнера
+    return TargetContainer->SlotTransfer(...);
 }
 
-bool USandboxObjectContainerCellWidget::SlotIsEmpty(int32 SlotId) {
-	return false;
-}
-
+// Основное действие со слотом (например использование предмета)
 void USandboxObjectContainerCellWidget::HandleSlotMainAction(int32 SlotId) {
-	ASandboxPlayerController* SandboxPC = Cast<ASandboxPlayerController>(GetOwningPlayer());
-	if (SandboxPC) {
-		SandboxPC->OnContainerMainAction(SlotId, ContainerName);
-	}
+    ASandboxPlayerController* SandboxPC = Cast<ASandboxPlayerController>(GetOwningPlayer());
+    if (SandboxPC) {
+        SandboxPC->OnContainerMainAction(SlotId, ContainerName); // Передаем действие контроллеру
+    }
 }
 
-AActor * USandboxObjectContainerCellWidget::GetOpenedObject() {
-	if (IsExternal()) {
-		ASandboxPlayerController* SandboxPC = Cast<ASandboxPlayerController>(GetOwningPlayer());
-		if (SandboxPC != nullptr) {
-			return SandboxPC->GetOpenedObject();
-		}
-	} else {
-		return GetOwningPlayer()->GetPawn();
-	}
-
-	return nullptr;
-}
-
-UContainerComponent * USandboxObjectContainerCellWidget::GetOpenedContainer() {
-	return GetContainer();
+// Получить открытый объект (сундук, ящик и т.д.)
+AActor* USandboxObjectContainerCellWidget::GetOpenedObject() {
+    if (IsExternal()) {
+        ASandboxPlayerController* SandboxPC = ...;
+        return SandboxPC->GetOpenedObject(); // Возвращаем открытый сундук
+    } else {
+        return GetOwningPlayer()->GetPawn(); // Возвращаем самого игрока
+    }
 }

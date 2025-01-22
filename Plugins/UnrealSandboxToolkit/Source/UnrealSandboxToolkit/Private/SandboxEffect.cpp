@@ -1,14 +1,19 @@
-
-
+// Подключаем заголовочный файл с объявлением класса
 #include "SandboxEffect.h"
 
-
+// Конструктор класса ASandboxEffect
 ASandboxEffect::ASandboxEffect() {
-	PrimaryActorTick.bCanEverTick = true;
-	bReplicates = true;
-
+    // Разрешаем актору получать события Tick каждый кадр
+    PrimaryActorTick.bCanEverTick = true;
+    
+    // Включаем сетевую репликацию - это значит, что эффект будет синхронизироваться
+    // между сервером и клиентами в мультиплеере
+    bReplicates = true;
 }
 
+// Функция вызывается, когда эффект появляется в игре
 void ASandboxEffect::BeginPlay() {
-	Super::BeginPlay();
+    // Вызываем реализацию родительского класса
+    Super::BeginPlay();
+    // Здесь можно добавить дополнительную логику инициализации
 }

@@ -1,4 +1,3 @@
-
 #include "SandboxPlayerController.h"
 #include "Blueprint/AIBlueprintHelperLibrary.h"
 #include "SandboxCharacter.h"
@@ -6,16 +5,19 @@
 #include "ContainerComponent.h"
 #include "Blueprint/WidgetBlueprintLibrary.h"
 
+// Основной контроллер игрока, управляющий всем взаимодействием с игровым миром
 ASandboxPlayerController::ASandboxPlayerController() {
 	//bShowMouseCursor = true;
-	DefaultMouseCursor = EMouseCursor::Default;
-	CurrentInventorySlot = -1;
-	bIsGameInputBlocked = false;
+	DefaultMouseCursor = EMouseCursor::Default; // Устанавливаем стандартный курсор мыши
+	CurrentInventorySlot = -1; // Изначально нет выбранного слота инвентаря
+	bIsGameInputBlocked = false; // По умолчанию ввод не заблокирован
 }
 
+// Вызывается при старте игры
 void ASandboxPlayerController::BeginPlay() {
 	Super::BeginPlay();
 
+	// Ищем контроллер уровня в мире
 	LevelController = nullptr;
 	for (TActorIterator<ASandboxLevelController> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
 		ASandboxLevelController* LevelCtrl = Cast<ASandboxLevelController>(*ActorItr);
@@ -27,18 +29,21 @@ void ASandboxPlayerController::BeginPlay() {
 	}
 }
 
+// Обновление каждый кадр
 void ASandboxPlayerController::PlayerTick(float DeltaTime) {
 	Super::PlayerTick(DeltaTime);
 
+	// Если включено движение к курсору - двигаемся
 	if (bMoveToMouseCursor)	{
 		MoveToMouseCursor();
 	}
 }
 
+// Настройка управления
 void ASandboxPlayerController::SetupInputComponent() {
-	// set up gameplay key bindings
 	Super::SetupInputComponent();
 
+	// Привязываем основные действия к кнопкам
 	InputComponent->BindAction("MainAction", IE_Pressed, this, &ASandboxPlayerController::OnMainActionPressedInternal);
 	InputComponent->BindAction("MainAction", IE_Released, this, &ASandboxPlayerController::OnMainActionReleasedInternal);
 
@@ -52,16 +57,18 @@ void ASandboxPlayerController::SetupInputComponent() {
 	InputComponent->BindAction("ToggleView", IE_Pressed, this, &ASandboxPlayerController::ToggleView);
 }
 
+// Перемещение к позиции курсора мыши
 void ASandboxPlayerController::MoveToMouseCursor() {
 	FHitResult Hit;
 	GetHitResultUnderCursor(ECC_WorldStatic, false, Hit);
 
 	if (Hit.bBlockingHit) {
-		// We hit something, move there
+		// Если попали во что-то - двигаемся туда
 		SetNewMoveDestination(Hit.ImpactPoint);
 	}
 }
 
+// Перемещение при касании (для мобильных устройств)
 void ASandboxPlayerController::MoveToTouchLocation(const ETouchIndex::Type FingerIndex, const FVector Location) {
 	FVector2D ScreenSpaceLocation(Location);
 
@@ -72,23 +79,27 @@ void ASandboxPlayerController::MoveToTouchLocation(const ETouchIndex::Type Finge
 	}
 }
 
+// Установка новой точки назначения для движения
 void ASandboxPlayerController::SetNewMoveDestination(const FVector DestLocation) {
 	ASandboxCharacter* SandboxCharacter = Cast<ASandboxCharacter>(GetCharacter());
 
 	if (SandboxCharacter) {
 		float const Distance = FVector::Dist(DestLocation, SandboxCharacter->GetActorLocation());
+		// Двигаемся только если точка достаточно далеко
 		if (Distance > 120.0f) {
 			UAIBlueprintHelperLibrary::SimpleMoveToLocation(this, DestLocation);
 		}
 	}
 }
 
+// Обработка нажатия кнопки перемещения
 void ASandboxPlayerController::SetDestinationPressed() {
 	ASandboxCharacter* SandboxCharacter = Cast<ASandboxCharacter>(GetCharacter());
 	if (!SandboxCharacter) {
 		return;
 	}
 
+	// Проверяем, что мы в режиме вида сверху и персонаж жив
 	if (SandboxCharacter->GetSandboxPlayerView() != PlayerView::TOP_DOWN) {
 		return;
 	}
@@ -100,6 +111,7 @@ void ASandboxPlayerController::SetDestinationPressed() {
 	bMoveToMouseCursor = true;
 }
 
+// Обработка отпускания кнопки перемещения
 void ASandboxPlayerController::SetDestinationReleased() {
 	ASandboxCharacter* SandboxCharacter = Cast<ASandboxCharacter>(GetCharacter());
 	if (!SandboxCharacter) {
@@ -117,6 +129,7 @@ void ASandboxPlayerController::SetDestinationReleased() {
 	bMoveToMouseCursor = false;
 }
 
+// Внутренние обработчики действий (проверяют блокировку ввода)
 void ASandboxPlayerController::OnMainActionPressedInternal() {
 	if (!IsGameInputBlocked()) {
 		OnMainActionPressed();
@@ -141,6 +154,7 @@ void ASandboxPlayerController::OnAltActionReleasedInternal() {
 	}
 }
 
+// Пустые функции для переопределения в Blueprint
 void ASandboxPlayerController::OnMainActionPressed() {
 
 }
@@ -157,14 +171,14 @@ void ASandboxPlayerController::OnAltActionReleased() {
 
 }
 
+// Переключение вида камеры
 void ASandboxPlayerController::ToggleView() {
 	if (IsGameInputBlocked()) {
 		return;
 	}
-
-	
 }
 
+// Вызывается при получении контроля над персонажем
 void ASandboxPlayerController::OnPossess(APawn* NewPawn) {
 	Super::OnPossess(NewPawn);
 
@@ -181,18 +195,21 @@ void ASandboxPlayerController::OnPossess(APawn* NewPawn) {
 	//bShowMouseCursor = false;
 }
 
+// Блокировка игрового ввода
 void ASandboxPlayerController::BlockGameInput() {
 	//UWidgetBlueprintLibrary::SetInputMode_GameAndUI(this, nullptr, false, false);
 	bIsGameInputBlocked = true;
 	//bShowMouseCursor = true;
 }
 
+// Разблокировка игрового ввода
 void ASandboxPlayerController::UnblockGameInput() {
 	//UWidgetBlueprintLibrary::SetInputMode_GameOnly(this);
 	bIsGameInputBlocked = false;
 	//bShowMouseCursor = false;
 }
 
+// Поиск и выбор объекта для взаимодействия
 void ASandboxPlayerController::TraceAndSelectActionObject() {
 	if (!IsGameInputBlocked()) {
 		FHitResult Res = TracePlayerActionPoint();
@@ -206,12 +223,14 @@ void ASandboxPlayerController::TraceAndSelectActionObject() {
 	}
 }
 
+// Трассировка луча для определения точки взаимодействия игрока
 FHitResult ASandboxPlayerController::TracePlayerActionPoint() {
 	ASandboxCharacter* SandboxCharacter = Cast<ASandboxCharacter>(GetCharacter());
 	if (!SandboxCharacter) {
 		return FHitResult();
 	}
 
+	// Разная логика трассировки для разных режимов камеры
 	if (SandboxCharacter->GetSandboxPlayerView() == PlayerView::THIRD_PERSON || SandboxCharacter->GetSandboxPlayerView() == PlayerView::FIRST_PERSON) {
 		float MaxUseDistance = SandboxCharacter->InteractionTargetLength;
 
@@ -252,6 +271,7 @@ FHitResult ASandboxPlayerController::TracePlayerActionPoint() {
 	return FHitResult();
 }
 
+// Вспомогательная функция для установки подсветки объекта
 void SetRenderCustomDepth2(AActor* Actor, bool RenderCustomDepth) {
 	TArray<UStaticMeshComponent*> MeshComponentList;
 	Actor->GetComponents<UStaticMeshComponent>(MeshComponentList);
@@ -261,14 +281,17 @@ void SetRenderCustomDepth2(AActor* Actor, bool RenderCustomDepth) {
 	}
 }
 
+// Обработка выбора объекта для взаимодействия
 void ASandboxPlayerController::OnSelectActionObject(AActor* Actor) {
 	SetRenderCustomDepth2(Actor, true);
 }
 
+// Обработка отмены выбора объекта
 void ASandboxPlayerController::OnDeselectActionObject(AActor* Actor) {
 	SetRenderCustomDepth2(Actor, false);
 }
 
+// Выбор объекта для взаимодействия
 void ASandboxPlayerController::SelectActionObject(AActor* Actor) {
 	ASandboxObject* Obj = Cast<ASandboxObject>(Actor);
 
@@ -288,6 +311,7 @@ void ASandboxPlayerController::SelectActionObject(AActor* Actor) {
 	}
 }
 
+// Получение компонента контейнера по имени
 UContainerComponent* ASandboxPlayerController::GetContainerByName(FName ContainerName) {
 	APawn* PlayerPawn = GetPawn();
 	if (PlayerPawn) {
@@ -304,10 +328,12 @@ UContainerComponent* ASandboxPlayerController::GetContainerByName(FName Containe
 	return nullptr;
 }
 
+// Получение инвентаря игрока
 UContainerComponent* ASandboxPlayerController::GetInventory() {
 	return GetContainerByName(TEXT("Inventory"));
 }
 
+// Подбор объекта в инвентарь
 bool ASandboxPlayerController::TakeObjectToInventory() {
 	UContainerComponent* Inventory = GetInventory();
 
@@ -334,6 +360,7 @@ bool ASandboxPlayerController::TakeObjectToInventory() {
 	return false;
 }
 
+// Открытие контейнера объекта
 bool ASandboxPlayerController::OpenObjectContainer(ASandboxObject* Obj) {
 	if (Obj != nullptr) {
 		TArray<UContainerComponent*> Components;
@@ -350,10 +377,12 @@ bool ASandboxPlayerController::OpenObjectContainer(ASandboxObject* Obj) {
 	return false;
 }
 
+// Проверка наличия открытого контейнера
 bool ASandboxPlayerController::HasOpenContainer() { 
 	return OpenedObject != nullptr; 
 }
 
+// Поиск и открытие контейнера объекта под прицелом
 bool ASandboxPlayerController::TraceAndOpenObjectContainer() {
 	FHitResult ActionPoint = TracePlayerActionPoint();
 
@@ -365,15 +394,18 @@ bool ASandboxPlayerController::TraceAndOpenObjectContainer() {
 	return false;
 }
 
+// Закрытие открытого контейнера
 void ASandboxPlayerController::CloseObjectWithContainer() {
 	this->OpenedObject = nullptr;
 	this->OpenedContainer = nullptr;
 }
 
+// Пустая функция для переопределения в Blueprint
 void ASandboxPlayerController::OnTracePlayerActionPoint(const FHitResult& Res) {
 
 }
 
+// Проверка блокировки игрового ввода
 bool ASandboxPlayerController::IsGameInputBlocked() {
 	ASandboxCharacter* SandboxCharacter = Cast<ASandboxCharacter>(GetCharacter());
 	if (SandboxCharacter && !SandboxCharacter->InputEnabled()) {
@@ -383,7 +415,7 @@ bool ASandboxPlayerController::IsGameInputBlocked() {
 	return bIsGameInputBlocked; 
 }
 
-
+// Установка текущего слота инвентаря
 void ASandboxPlayerController::SetCurrentInventorySlot(int32 Slot) { 
 	ASandboxCharacter* SandboxCharacter = Cast<ASandboxCharacter>(GetCharacter());
 	if (SandboxCharacter && SandboxCharacter->IsDead()) {
@@ -393,6 +425,7 @@ void ASandboxPlayerController::SetCurrentInventorySlot(int32 Slot) {
 	CurrentInventorySlot = Slot; 
 }
 
+// Геттеры для доступа к открытому контейнеру и объекту
 UContainerComponent* ASandboxPlayerController::GetOpenedContainer() { 
 	return this->OpenedContainer; 
 }
@@ -401,10 +434,12 @@ ASandboxObject* ASandboxPlayerController::GetOpenedObject() {
 	return this->OpenedObject; 
 }
 
-void  ASandboxPlayerController::ShowMouseCursor(bool bShowCursor) { 
+// Управление видимостью курсора мыши
+void ASandboxPlayerController::ShowMouseCursor(bool bShowCursor) { 
 	this->bShowMouseCursor = bShowCursor; 
 };
 
+// Пустые функции для переопределения в Blueprint
 void ASandboxPlayerController::OnContainerMainAction(int32 SlotId, FName ContainerName) {
 
 }
@@ -417,6 +452,7 @@ bool ASandboxPlayerController::OnContainerDropCheck(int32 SlotId, FName Containe
 	return true;
 }
 
+// Сетевые функции для синхронизации контейнеров
 void ASandboxPlayerController::TransferContainerStack_Implementation(const FString& ObjectNetUid, const FString& ContainerName, const FContainerStack& Stack, const int SlotId) {
 	if (LevelController) {
 		ASandboxObject* Obj = LevelController->GetObjectByNetUid(ObjectNetUid);
@@ -447,10 +483,12 @@ void ASandboxPlayerController::TransferInventoryStack_Implementation(const FStri
 	PlayerCharacter->ForceNetUpdate();
 }
 
+// Получение контроллера уровня
 ASandboxLevelController* ASandboxPlayerController::GetLevelController() {
 	return LevelController;
 }
 
+// Обработка наведения на слот контейнера
 bool ASandboxPlayerController::OnContainerSlotHover(int32 SlotId, FName ContainerName) {
 	return false;
 }

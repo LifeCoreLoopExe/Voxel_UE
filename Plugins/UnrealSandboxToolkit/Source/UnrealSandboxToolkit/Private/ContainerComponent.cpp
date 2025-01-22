@@ -8,19 +8,24 @@
 #include "SandboxPlayerController.h"
 #include <algorithm>
 
+// Получает объект из стека контейнера по его ID
 const ASandboxObject* FContainerStack::GetObject() const {
 	return ASandboxLevelController::GetDefaultSandboxObject(SandboxClassId);
 }
 
+// Конструктор компонента контейнера
+// Отключает тик компонента, так как он не нужен для логики контейнера
 UContainerComponent::UContainerComponent() {
 	//bWantsBeginPlay = true;
 	PrimaryComponentTick.bCanEverTick = false;
 }
 
+// Функция вызывается при начале игры
 void UContainerComponent::BeginPlay() {
 	Super::BeginPlay();
 }
 
+// Функция тика компонента (отключена, так как не используется)
 void UContainerComponent::TickComponent( float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction ) {
 	Super::TickComponent( DeltaTime, TickType, ThisTickFunction );
 }
@@ -36,6 +41,8 @@ bool UContainerComponent::IsOwnerAdmin() {
 }
 */
 
+// Проверяет, пуст ли контейнер
+// Контейнер считается пустым, если в нем нет предметов или все стеки пустые
 bool UContainerComponent::IsEmpty() const {
 	if (Content.Num() == 0) {
 		return true;
@@ -51,7 +58,10 @@ bool UContainerComponent::IsEmpty() const {
 	return true;
 }
 
+// Напрямую устанавливает стек предметов в определенный слот
+// Используется для синхронизации содержимого контейнера
 bool UContainerComponent::SetStackDirectly(const FContainerStack& Stack, const int SlotId) {
+	// Увеличиваем размер массива, если слот больше текущего размера
 	if (SlotId >= Content.Num()) {
 		Content.SetNum(SlotId + 1);
 	}
@@ -69,6 +79,8 @@ bool UContainerComponent::SetStackDirectly(const FContainerStack& Stack, const i
 	return true;
 }
 
+// Добавляет объект в контейнер
+// Пытается сложить с существующим стеком или найти пустой слот
 bool UContainerComponent::AddObject(ASandboxObject* Obj) {
 	if (Obj == nullptr) {
 		return false;
@@ -76,6 +88,7 @@ bool UContainerComponent::AddObject(ASandboxObject* Obj) {
 
 	uint32 MaxStackSize = Obj->GetMaxStackSize();
 
+	// Ищем существующий стек того же типа или первый пустой слот
 	int FirstEmptySlot = -1;
 	bool bIsAdded = false;
 	for (int Idx = 0; Idx < Content.Num(); Idx++) {
@@ -121,6 +134,8 @@ bool UContainerComponent::AddObject(ASandboxObject* Obj) {
 	return true;
 }
 
+// Получает указатель на стек предметов в указанном слоте
+// Возвращает nullptr если слот невалидный
 FContainerStack* UContainerComponent::GetSlot(const int Slot) {
 	if (!Content.IsValidIndex(Slot)) {
 		return nullptr;
@@ -155,6 +170,8 @@ ASandboxObject* UContainerComponent::GetAvailableSlotObject(const int Slot) {
 }
 */
 
+// Уменьшает количество предметов в указанном слоте на заданное число
+// Возвращает true если в стеке остались предметы, false если стек стал пустым
 bool UContainerComponent::DecreaseObjectsInContainer(int Slot, int Num) {
 	FContainerStack* Stack = GetSlot(Slot);
 
@@ -174,10 +191,11 @@ bool UContainerComponent::DecreaseObjectsInContainer(int Slot, int Num) {
 	return Stack->Amount > 0;
 }
 
+// Изменяет количество предметов в стеке на указанное число
+// Может как увеличивать, так и уменьшать количество
 void UContainerComponent::ChangeAmount(int Slot, int Num) {
 	FContainerStack* Stack = GetSlot(Slot);
 
-	//TODO check stack size
 	if (Stack) {
 		if (Stack->Amount > 0) {
 			Stack->Amount += Num;
@@ -191,6 +209,7 @@ void UContainerComponent::ChangeAmount(int Slot, int Num) {
 	}
 }
 
+// Проверяет, пуст ли указанный слот
 bool UContainerComponent::IsSlotEmpty(int SlotId) const {
 	const FContainerStack* Stack = GetSlot(SlotId);
 	if (Stack) {
@@ -200,17 +219,20 @@ bool UContainerComponent::IsSlotEmpty(int SlotId) const {
 	return true;
 }
 
+// Настройка сетевой репликации для массива Content
 void UContainerComponent::GetLifetimeReplicatedProps(TArray< FLifetimeProperty > & OutLifetimeProps) const {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(UContainerComponent, Content);
 }
 
+// Копирует содержимое текущего контейнера в целевой
 void UContainerComponent::CopyTo(UContainerComponent* Target) {
 	Target->Content = this->Content;
 	bUpdated = true;
 	MakeStats();
 }
 
+// Возвращает массив ID всех объектов в контейнере
 TArray<uint64> UContainerComponent::GetAllObjects() const {
 	TArray<uint64> Result;
 	for (int Idx = 0; Idx < Content.Num(); Idx++) {
@@ -226,6 +248,7 @@ TArray<uint64> UContainerComponent::GetAllObjects() const {
 	return Result;
 }
 
+// Проверяет, являются ли два стека одинаковыми предметами
 bool IsSameObject(const FContainerStack* StackSourcePtr, const FContainerStack* StackTargetPtr) {
 	if (StackSourcePtr && StackTargetPtr) {
 		const auto* SourceObj = StackSourcePtr->GetObject();
@@ -233,7 +256,6 @@ bool IsSameObject(const FContainerStack* StackSourcePtr, const FContainerStack* 
 		if (SourceObj && TargetObj) {
 			return SourceObj->GetSandboxClassId() == TargetObj->GetSandboxClassId();
 		}
-
 	}
 
 	return false;
@@ -356,20 +378,24 @@ bool UContainerComponent::SlotTransfer(int32 SlotSourceId, int32 SlotTargetId, A
 		return bResult;
 }
 
+// Вызывается при обновлении содержимого контейнера по сети
 void UContainerComponent::OnRep_Content() {
 	UE_LOG(LogTemp, Warning, TEXT("OnRep_Content: %s"), *GetName());
 	bUpdated = true;
 	MakeStats();
 }
 
+// Проверяет, было ли обновлено содержимое контейнера
 bool UContainerComponent::IsUpdated() {
 	return bUpdated;
 }
 
+// Сбрасывает флаг обновления
 void UContainerComponent::ResetUpdatedFlag() {
 	bUpdated = false;
 }
 
+// MakeStats() пересчитывает статистику по всем предметам в контейнере
 void UContainerComponent::MakeStats() {
 	InventoryStats.Empty();
 
@@ -381,11 +407,12 @@ void UContainerComponent::MakeStats() {
 	}
 }
 
+// Возвращает статистику по всем предметам в контейнере
 const TMap<uint64, uint32>& UContainerComponent::GetStats() const {
 	return InventoryStats;
 }
 
-
+// Возвращает прямой доступ к содержимому контейнера
 const TArray<FContainerStack>& UContainerComponent::GetContent() {
 	return Content;
 }

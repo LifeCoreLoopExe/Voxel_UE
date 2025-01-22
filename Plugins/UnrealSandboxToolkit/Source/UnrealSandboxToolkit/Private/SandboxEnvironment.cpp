@@ -1,25 +1,26 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Этот файл отвечает за всю систему окружения в игре - смену дня и ночи, освещение, туман
 
 #include "SandboxEnvironment.h"
 #include <ctime>
 #include "SunPos.h"
 #include "Net/UnrealNetwork.h"
 
-
+// Главный класс, который управляет всем окружением в игре
 ASandboxEnvironment::ASandboxEnvironment() {
-	bReplicates = true;
-	PrimaryActorTick.bCanEverTick = true;
-	TimeSpeed = 10.f;
-	bEnableDayNightCycle = true;
-	Lng = 27.55;
-	Lat = 53.91;
-	TimeZone = +3;
-	PlayerPos = FVector::ZeroVector;
-	InitialSkyIntensity = 0.1;
-	CaveSkyLightIntensity = 1;
-	CaveFogDensity = 0.5;
+	bReplicates = true; // Включаем поддержку мультиплеера
+	PrimaryActorTick.bCanEverTick = true; // Разрешаем обновление каждый кадр
+	TimeSpeed = 10.f; // Время идет в 10 раз быстрее реального
+	bEnableDayNightCycle = true; // Включаем смену дня и ночи
+	Lng = 27.55; // Долгота на карте мира
+	Lat = 53.91; // Широта на карте мира
+	TimeZone = +3; // Часовой пояс (например, Москва = +3)
+	PlayerPos = FVector::ZeroVector; // Начальная позиция игрока - в центре координат
+	InitialSkyIntensity = 0.1; // Начальная яркость неба
+	CaveSkyLightIntensity = 1; // Яркость освещения в пещерах
+	CaveFogDensity = 0.5; // Густота тумана в пещерах
 }
 
+// Проверяет насколько ярко светит небо
 float GetSkyLightIntensity(ASkyLight* SkyLight) {
 	if (SkyLight) {
 		USkyLightComponent* SkyLightComponent = SkyLight->GetLightComponent();
@@ -31,6 +32,7 @@ float GetSkyLightIntensity(ASkyLight* SkyLight) {
 	return -1;
 }
 
+// Проверяет насколько ярко светит солнце
 float GetSunLightIntensity(ADirectionalLight* Light) {
 	if (Light) {
 		ULightComponent* LightComponent = Light->GetLightComponent();
@@ -42,52 +44,60 @@ float GetSunLightIntensity(ADirectionalLight* Light) {
 	return 10.f;
 }
 
-
+// Эта функция вызывается при старте игры
 void ASandboxEnvironment::BeginPlay() {
 	Super::BeginPlay();
 
+	// Настраиваем начальное положение солнца
 	if (DirectionalLightSource){
 		DirectionalLightSource->SetActorRotation(FRotator(-90.0f, 0.0f, 0.0f));
 		InitialSunIntensity = GetSunLightIntensity(DirectionalLightSource);
 	}
 
+	// Показываем или прячем пещеру
 	if (CaveSphere) {
 		CaveSphere->GetStaticMeshComponent()->SetVisibility(bCaveMode);
 	}
 
+	// Запоминаем начальные настройки тумана
 	if (GlobalFog) {
 		UExponentialHeightFogComponent* FogCmoponent = GlobalFog->GetComponent();
 		InitialFogDensity = FogCmoponent->FogDensity;
 	}
 
+	// Запоминаем начальную яркость неба
 	if (SkyLight) {
 		InitialSkyIntensity = GetSkyLightIntensity(SkyLight);
 	}
 }
 
+// Функция вызывается каждый кадр
 void ASandboxEnvironment::Tick( float DeltaTime ) {
 	Super::Tick( DeltaTime );
 
+	// Если включена смена дня и ночи - обновляем время
 	if(bEnableDayNightCycle) {
 		PerformDayNightCycle();
 	}
 }
 
+// Меняет яркость неба
 void SetSkyLightIntensity(ASkyLight* SkyLight, float Intensity) {
 	if (SkyLight) {
 		USkyLightComponent* SkyLightComponent = SkyLight->GetLightComponent();
 		if (SkyLightComponent) {
 			SkyLightComponent->Intensity = Intensity;
-			//SkyLightComponent->RecaptureSky(); // ue4 only
 			SkyLightComponent->MarkRenderStateDirty();
 		}
 	}
 }
 
+// Просто возвращает 1 (пока что не используется)
 float ASandboxEnvironment::ClcHeightFactor() const {
 	return 1.f;
 }
 
+// Самая важная функция - тут происходит вся магия смены дня и ночи
 void ASandboxEnvironment::PerformDayNightCycle() {
 	UWorld* World = GetWorld();
 	AGameStateBase* GameState = World->GetGameState();
@@ -96,82 +106,67 @@ void ASandboxEnvironment::PerformDayNightCycle() {
 		return;
 	}
 
+	// Получаем текущее время на сервере
 	float RealServerTime = GameState->GetServerWorldTimeSeconds();
-	TSandboxGameTime GameDayTime = ClcGameTimeOfDay(RealServerTime, false); // use UTC time
+	// Переводим реальное время в игровое
+	TSandboxGameTime GameDayTime = ClcGameTimeOfDay(RealServerTime, false); // используем UTC время
 
-	//UE_LOG(LogTemp, Log, TEXT("%f"), RealServerTime);
-	//UE_LOG(LogTemp, Log, TEXT("%d : %d"), GameTimeOfDay.hours, GameTimeOfDay.minutes);
-
-	//FString ttt = GetCurrentTimeAsString();
-	//UE_LOG(LogTemp, Log, TEXT("%s"), *ttt);
-
+	// Заполняем структуру времени для расчета положения солнца
 	cTime Time;
-	Time.iYear = GameDayTime.year;
-	Time.iMonth = GameDayTime.month;
-	Time.iDay = GameDayTime.days;
+	Time.iYear = GameDayTime.year;      // Год
+	Time.iMonth = GameDayTime.month;    // Месяц
+	Time.iDay = GameDayTime.days;       // День
+	Time.dHours = GameDayTime.hours;    // Часы
+	Time.dMinutes = GameDayTime.minutes; // Минуты
+	Time.dSeconds = GameDayTime.seconds; // Секунды
 
-	Time.dHours = GameDayTime.hours;
-	Time.dMinutes = GameDayTime.minutes;
-	Time.dSeconds = GameDayTime.seconds;
-
+	// Задаем географическое положение
 	cLocation GeoLoc;
-	GeoLoc.dLongitude = Lng;
-	GeoLoc.dLatitude = Lat;
+	GeoLoc.dLongitude = Lng; // Долгота
+	GeoLoc.dLatitude = Lat;  // Широта
 
 	cSunCoordinates SunPosition;
-
+	// Вычисляем положение солнца
 	sunpos(Time, GeoLoc, &SunPosition);
 
+	// Если есть источник солнечного света
 	if (DirectionalLightSource) {
+		// Поворачиваем солнце как надо
 		DirectionalLightSource->SetActorRotation(FRotator(-(90 - SunPosition.dZenithAngle), SunPosition.dAzimuth, 0.0f));
 
-		if (bCaveMode) {
-			//DirectionalLightSource->GetLightComponent()->SetIntensity(0.1);
-		} else {
-			//DirectionalLightSource->GetLightComponent()->SetIntensity(4);
-			//DirectionalLightSource->SetEnabled(true);
-		}
-
+		// Определяем день сейчас или ночь
 		float H = 1 - SunPosition.dZenithAngle / 180;
-		bIsNight = H < 0.5;
+		bIsNight = H < 0.5; // Если солнце низко - значит ночь
 
 		float HeightFactor = ClcHeightFactor();
 
+		// Настраиваем яркость солнца в пещерах
 		if (CaveSunLightCurve) {
 			float SunIntensity = CaveSunLightCurve->GetFloatValue(HeightFactor);
 			DirectionalLightSource->GetLightComponent()->SetIntensity(InitialSunIntensity * SunIntensity);
 		}
 
-
+		// Настраиваем освещение неба
 		if (SkyLight) {
 			float DayNightIntensity = InitialSkyIntensity;
-
-			//const float CaveSkyLightIntensity = InitialSkyIntensity * CaveSkyLightRatio;
 			const float Intensity = (DayNightIntensity * HeightFactor) + (CaveSkyLightIntensity * (1 - HeightFactor));
-			//UE_LOG(LogTemp, Log, TEXT("H = %f, DayNightIntensity = %f, HeightFactor = %f ---> %f"), H, DayNightIntensity, HeightFactor, Intensity);
-			//UE_LOG(LogTemp, Log, TEXT("Intensity -> %f"), Intensity);
-
-			//SetSkyLightIntensity(SkyLight, Intensity);
-
-			if (bCaveMode) {
-				//SetSkyLightIntensity(SkyLight, 6);
-			}
 		}
 
+		// Настраиваем туман
 		if (GlobalFog) {
 			UExponentialHeightFogComponent* FogCmoponent = GlobalFog->GetComponent();
-			//FogCmoponent->SetFogInscatteringColor(FogColor);
 
+			// Меняем плотность тумана в зависимости от времени суток
 			if (GlobalFogDensityCurve) {
 				const float DayNightFogDensity = InitialFogDensity * GlobalFogDensityCurve->GetFloatValue(H);
 				const float FogDensity = (DayNightFogDensity * HeightFactor) + (CaveFogDensity * (1 - HeightFactor));
-				//UE_LOG(LogTemp, Log, TEXT("H = %f, GlobalFogDensityCurve = %f, HeightFactor = %f ---> %f"), H, GlobalFogDensityCurve->GetFloatValue(H), HeightFactor, FogDensity);
 				FogCmoponent->SetFogDensity(FogDensity);
 			}
 		}
 	}
 }
 
+// Переводит реальное время в игровое
 float ASandboxEnvironment::ClcGameTime(float RealServerTime) {
 	return (RealServerTime + RealTimeOffset) * TimeSpeed;
 }
