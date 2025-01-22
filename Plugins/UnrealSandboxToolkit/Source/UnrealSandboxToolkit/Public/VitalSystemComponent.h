@@ -1,65 +1,60 @@
 // Copyright blackw 2015-2020
 
-#pragma once
+#pragma once // Включает файл только один раз
 
-#include "Engine.h"
-#include "Components/ActorComponent.h"
-#include "VitalSystemComponent.generated.h"
+#include "Engine.h" // Включает основные функции движка
+#include "Components/ActorComponent.h" // Включает компонент актера
+#include "VitalSystemComponent.generated.h" // Включает сгенерированный заголовочный файл для VitalSystemComponent
 
-
-UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
-class UNREALSANDBOXTOOLKIT_API UVitalSystemComponent : public UActorComponent {
-	GENERATED_BODY()
-
-public:
-
-	UPROPERTY(Replicated, EditAnywhere, Category = "Sandbox Health")
-	float Health;
-
-	UPROPERTY(Replicated, EditAnywhere, Category = "Sandbox Health")
-	float MaxHealth;
-
-	UPROPERTY(Replicated, EditAnywhere, Category = "Sandbox Health")
-	float Stamina;
-
-	UPROPERTY(Replicated, EditAnywhere, Category = "Sandbox Health")
-	float MaxStamina;
-
-public:	
-	UVitalSystemComponent();
-
-	virtual void BeginPlay() override;
-
-	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
-	
-	virtual void TickComponent( float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction ) override;
+UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent)) // Объявление класса, доступного для рефлексии UObject и Blueprint
+class UNREALSANDBOXTOOLKIT_API UVitalSystemComponent : public UActorComponent { // Объявление класса UVitalSystemComponent, наследующегося от UActorComponent
+    GENERATED_BODY() // Макрос для генерации тела класса
 
 public:
+    UPROPERTY(Replicated, EditAnywhere, Category = "Sandbox Health") // Свойство, доступное для редактирования в редакторе и репликации
+    float Health; // Текущее здоровье
 
-	float GetHealth();
+    UPROPERTY(Replicated, EditAnywhere, Category = "Sandbox Health") // Свойство, доступное для редактирования в редакторе и репликации
+    float MaxHealth; // Максимальное здоровье
 
-	float GetMaxHealth();
+    UPROPERTY(Replicated, EditAnywhere, Category = "Sandbox Health") // Свойство, доступное для редактирования в редакторе и репликации
+    float Stamina; // Текущая выносливость
 
-	void ChangeHealth(float Val);
+    UPROPERTY(Replicated, EditAnywhere, Category = "Sandbox Health") // Свойство, доступное для редактирования в редакторе и репликации
+    float MaxStamina; // Максимальная выносливость
 
-	void DamageFromFall(float Velocity);
+public:
+    UVitalSystemComponent(); // Конструктор
 
-	void Damage(float DamageVal);
+    virtual void BeginPlay() override; // Метод, вызываемый при начале игры
 
-	float GetStamina();
+    virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override; // Метод, вызываемый при завершении игры
 
-	float GetMaxStamina();
+    virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override; // Метод, вызываемый каждый тик
 
-	void ChangeStamina(float Val);
+public:
+    float GetHealth(); // Метод для получения текущего здоровья
 
-	bool CheckStamina(float Val);
+    float GetMaxHealth(); // Метод для получения максимального здоровья
+
+    void ChangeHealth(float Val); // Метод для изменения здоровья
+
+    void DamageFromFall(float Velocity); // Метод для получения урона от падения
+
+    void Damage(float DamageVal); // Метод для получения урона
+
+    float GetStamina(); // Метод для получения текущей выносливости
+
+    float GetMaxStamina(); // Метод для получения максимальной выносливости
+
+    void ChangeStamina(float Val); // Метод для изменения выносливости
+
+    bool CheckStamina(float Val); // Метод для проверки выносливости
 
 private:
+    bool IsOwnerAdmin(); // Метод для проверки, является ли владелец администратором
 
-	bool IsOwnerAdmin();
+    FTimerHandle Timer; // Дескриптор таймера
 
-	FTimerHandle Timer;
-
-	void PerformTimer();
-
+    void PerformTimer(); // Метод для выполнения таймера
 };

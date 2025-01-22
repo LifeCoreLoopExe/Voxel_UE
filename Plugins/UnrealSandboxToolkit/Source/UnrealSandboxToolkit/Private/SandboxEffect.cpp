@@ -1,14 +1,12 @@
 
 
-#include "SandboxEffect.h"
-
+#include "SandboxEffect.h" // Включает заголовочный файл для SandboxEffect
 
 ASandboxEffect::ASandboxEffect() {
-	PrimaryActorTick.bCanEverTick = true;
-	bReplicates = true;
-
+    PrimaryActorTick.bCanEverTick = true; // Разрешает тикирование актера
+    bReplicates = true; // Включает репликацию актера
 }
 
 void ASandboxEffect::BeginPlay() {
-	Super::BeginPlay();
+    Super::BeginPlay(); // Вызывает метод BeginPlay родительского класса
 }

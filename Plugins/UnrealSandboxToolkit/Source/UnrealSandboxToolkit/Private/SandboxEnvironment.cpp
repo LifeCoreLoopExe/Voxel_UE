@@ -7,40 +7,41 @@
 
 
 ASandboxEnvironment::ASandboxEnvironment() {
-	bReplicates = true;
-	PrimaryActorTick.bCanEverTick = true;
-	TimeSpeed = 10.f;
-	bEnableDayNightCycle = true;
-	Lng = 27.55;
-	Lat = 53.91;
-	TimeZone = +3;
-	PlayerPos = FVector::ZeroVector;
-	InitialSkyIntensity = 0.1;
-	CaveSkyLightIntensity = 1;
-	CaveFogDensity = 0.5;
+    bReplicates = true; // Включает репликацию
+    PrimaryActorTick.bCanEverTick = true; // Разрешает тикирование актера
+    TimeSpeed = 10.f; // Устанавливает скорость времени
+    bEnableDayNightCycle = true; // Включает цикл день/ночь
+    Lng = 27.55; // Устанавливает долготу
+    Lat = 53.91; // Устанавливает широту
+    TimeZone = +3; // Устанавливает часовой пояс
+    PlayerPos = FVector::ZeroVector; // Устанавливает начальную позицию игрока
+    InitialSkyIntensity = 0.1; // Устанавливает начальную интенсивность неба
+    CaveSkyLightIntensity = 1; // Устанавливает интенсивность света в пещере
+    CaveFogDensity = 0.5; // Устанавливает плотность тумана в пещере
 }
 
 float GetSkyLightIntensity(ASkyLight* SkyLight) {
-	if (SkyLight) {
-		USkyLightComponent* SkyLightComponent = SkyLight->GetLightComponent();
-		if (SkyLightComponent) {
-			return SkyLightComponent->Intensity;
-		}
-	}
+    if (SkyLight) {
+        USkyLightComponent* SkyLightComponent = SkyLight->GetLightComponent();
+        if (SkyLightComponent) {
+            return SkyLightComponent->Intensity; // Возвращает интенсивность света неба
+        }
+    }
 
-	return -1;
+    return -1; // Возвращает -1, если компонент света не найден
 }
 
 float GetSunLightIntensity(ADirectionalLight* Light) {
-	if (Light) {
-		ULightComponent* LightComponent = Light->GetLightComponent();
-		if (LightComponent) {
-			return LightComponent->Intensity;
-		}
-	}
+    if (Light) {
+        ULightComponent* LightComponent = Light->GetLightComponent();
+        if (LightComponent) {
+            return LightComponent->Intensity; // Возвращает интенсивность солнечного света
+        }
+    }
 
-	return 10.f;
+    return 10.f; // Возвращает 10.0, если компонент света не найден
 }
+
 
 
 void ASandboxEnvironment::BeginPlay() {

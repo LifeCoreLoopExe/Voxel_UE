@@ -1,35 +1,32 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-#pragma once
+#pragma once // Включает файл только один раз
 
-#include "Engine.h"
-#include "SandboxObject.h"
-#include "SandboxEffect.h"
-#include "Runtime/Engine/Classes/Engine/DataAsset.h"
-#include "SandboxObjectMap.generated.h"
+#include "Engine.h" // Включает основные функции движка
+#include "SandboxObject.h" // Включает заголовочный файл для SandboxObject
+#include "SandboxEffect.h" // Включает заголовочный файл для SandboxEffect
+#include "Runtime/Engine/Classes/Engine/DataAsset.h" // Включает заголовочный файл для DataAsset
+#include "SandboxObjectMap.generated.h" // Включает сгенерированный заголовочный файл для SandboxObjectMap
 
-USTRUCT(BlueprintType)
+USTRUCT(BlueprintType) // Объявление структуры, доступной для рефлексии UObject и Blueprint
 struct FSandboxStaticData : public FTableRowBase {
-	GENERATED_BODY()
+    GENERATED_BODY() // Макрос для генерации тела структуры
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	FString ObjectName;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly) // Свойство, доступное для редактирования в редакторе и чтения в Blueprint
+    FString ObjectName; // Имя объекта
 };
 
+UCLASS(BlueprintType, Blueprintable) // Объявление класса, доступного для рефлексии UObject и Blueprint
+class UNREALSANDBOXTOOLKIT_API USandboxObjectMap : public UDataAsset { // Объявление класса USandboxObjectMap, наследующегося от UDataAsset
+    GENERATED_BODY() // Макрос для генерации тела класса
 
-UCLASS(BlueprintType, Blueprintable)
-class UNREALSANDBOXTOOLKIT_API USandboxObjectMap : public UDataAsset {
-	GENERATED_BODY()
-	
-public:	
+public:
+    UPROPERTY(EditAnywhere, Category = "UnrealSandbox Toolkit") // Свойство, доступное для редактирования в редакторе
+    TArray<TSubclassOf<ASandboxObject>> ObjectList; // Список объектов Sandbox
 
-	UPROPERTY(EditAnywhere, Category = "UnrealSandbox Toolkit")
-	TArray<TSubclassOf<ASandboxObject>> ObjectList;
+    // UPROPERTY(EditAnywhere, Category = "UnrealSandbox Toolkit")
+    // TMap<uint64, FSandboxStaticData> StaticData;
 
-	//UPROPERTY(EditAnywhere, Category = "UnrealSandbox Toolkit")
-	//TMap<uint64, FSandboxStaticData> StaticData;
-
-	UPROPERTY(EditAnywhere, Category = "UnrealSandbox Toolkit")
-	TMap<int32, TSubclassOf<ASandboxEffect>> Effects;
-
+    UPROPERTY(EditAnywhere, Category = "UnrealSandbox Toolkit") // Свойство, доступное для редактирования в редакторе
+    TMap<int32, TSubclassOf<ASandboxEffect>> Effects; // Карта эффектов Sandbox
 };

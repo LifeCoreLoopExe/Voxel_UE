@@ -1,15 +1,13 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#pragma once
+#pragma once // Включает файл только один раз
 
-#include "CoreMinimal.h"
-#include "Modules/ModuleManager.h"
+#include "CoreMinimal.h" // Включает минимальные функции ядра движка
+#include "Modules/ModuleManager.h" // Включает менеджер модулей
 
-class FUnrealSandboxToolkitModule : public IModuleInterface
-{
+class FUnrealSandboxToolkitModule : public IModuleInterface { // Объявление класса FUnrealSandboxToolkitModule, наследующегося от IModuleInterface
 public:
-
-	/** IModuleInterface implementation */
-	virtual void StartupModule() override;
-	virtual void ShutdownModule() override;
+    /** IModuleInterface implementation */
+    virtual void StartupModule() override; // Метод для запуска модуля
+    virtual void ShutdownModule() override; // Метод для завершения работы модуля
 };

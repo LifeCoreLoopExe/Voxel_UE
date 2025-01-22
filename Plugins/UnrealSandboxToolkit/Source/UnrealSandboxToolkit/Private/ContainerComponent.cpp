@@ -1,141 +1,131 @@
 // Copyright blackw 2015-2020
 
 
-#include "ContainerComponent.h"
-#include "SandboxObject.h"
-#include "Net/UnrealNetwork.h"
-#include "SandboxLevelController.h"
-#include "SandboxPlayerController.h"
-#include <algorithm>
+#include "ContainerComponent.h" // Включает заголовочный файл для ContainerComponent
+#include "SandboxObject.h" // Включает заголовочный файл для SandboxObject
+#include "Net/UnrealNetwork.h" // Включает заголовочный файл для сетевых функций
+#include "SandboxLevelController.h" // Включает заголовочный файл для SandboxLevelController
+#include "SandboxPlayerController.h" // Включает заголовочный файл для SandboxPlayerController
+#include <algorithm> // Включает заголовочный файл для алгоритмов
 
 const ASandboxObject* FContainerStack::GetObject() const {
-	return ASandboxLevelController::GetDefaultSandboxObject(SandboxClassId);
+    return ASandboxLevelController::GetDefaultSandboxObject(SandboxClassId); // Возвращает объект Sandbox по умолчанию
 }
 
 UContainerComponent::UContainerComponent() {
-	//bWantsBeginPlay = true;
-	PrimaryComponentTick.bCanEverTick = false;
+    // bWantsBeginPlay = true;
+    PrimaryComponentTick.bCanEverTick = false; // Отключает тикирование компонента
 }
 
 void UContainerComponent::BeginPlay() {
-	Super::BeginPlay();
+    Super::BeginPlay(); // Вызывает метод BeginPlay родительского класса
 }
 
-void UContainerComponent::TickComponent( float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction ) {
-	Super::TickComponent( DeltaTime, TickType, ThisTickFunction );
+void UContainerComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) {
+    Super::TickComponent(DeltaTime, TickType, ThisTickFunction); // Вызывает метод TickComponent родительского класса
 }
-
-/*
-bool UContainerComponent::IsOwnerAdmin() {
-	ASandboxCharacter* SandboxCharacter = Cast<ASandboxCharacter>(GetOwner());
-	if (SandboxCharacter) {
-		return SandboxCharacter->bIsAdmin;
-	}
-
-	return true;
-}
-*/
 
 bool UContainerComponent::IsEmpty() const {
-	if (Content.Num() == 0) {
-		return true;
-	}
+    if (Content.Num() == 0) {
+        return true; // Возвращает true, если контейнер пуст
+    }
 
-	for (int Idx = 0; Idx < Content.Num(); Idx++) {
-		FContainerStack Stack = Content[Idx];
-		if (Stack.Amount > 0 ) {
-			return false;
-		}
-	}
+    for (int Idx = 0; Idx < Content.Num(); Idx++) {
+        FContainerStack Stack = Content[Idx];
+        if (Stack.Amount > 0) {
+            return false; // Возвращает false, если найден хотя бы один непустой стек
+        }
+    }
 
-	return true;
+    return true; // Возвращает true, если все стеки пусты
 }
 
 bool UContainerComponent::SetStackDirectly(const FContainerStack& Stack, const int SlotId) {
-	if (SlotId >= Content.Num()) {
-		Content.SetNum(SlotId + 1);
-	}
+    if (SlotId >= Content.Num()) {
+        Content.SetNum(SlotId + 1); // Увеличивает размер контейнера, если необходимо
+    }
 
-	FContainerStack* StackPtr = &Content[SlotId];
-	if (Stack.Amount > 0) {
-		StackPtr->Amount = Stack.Amount;
-		StackPtr->SandboxClassId = Stack.SandboxClassId;
-	} else {
-		StackPtr->Clear();
-	}
+    FContainerStack* StackPtr = &Content[SlotId];
+    if (Stack.Amount > 0) {
+        StackPtr->Amount = Stack.Amount; // Устанавливает количество
+        StackPtr->SandboxClassId = Stack.SandboxClassId; // Устанавливает идентификатор класса Sandbox
+    } else {
+        StackPtr->Clear(); // Очищает стек
+    }
 
-	MakeStats();
-	bUpdated = true;
-	return true;
+    MakeStats(); // Обновляет статистику
+    bUpdated = true; // Устанавливает флаг обновления
+    return true; // Возвращает true
 }
 
 bool UContainerComponent::AddObject(ASandboxObject* Obj) {
-	if (Obj == nullptr) {
-		return false;
-	}
+    if (Obj == nullptr) {
+        return false; // Возвращает false, если объект не существует
+    }
 
-	uint32 MaxStackSize = Obj->GetMaxStackSize();
+    uint32 MaxStackSize = Obj->GetMaxStackSize(); // Получает максимальный размер стека
 
-	int FirstEmptySlot = -1;
-	bool bIsAdded = false;
-	for (int Idx = 0; Idx < Content.Num(); Idx++) {
-		FContainerStack* Stack = &Content[Idx];
+    int FirstEmptySlot = -1;
+    bool bIsAdded = false;
+    for (int Idx = 0; Idx < Content.Num(); Idx++) {
+        FContainerStack* Stack = &Content[Idx];
 
-		//TODO check inventory max volume and mass
-		if (Stack->Amount > 0) {
-			if (Stack->SandboxClassId == Obj->GetSandboxClassId() && MaxStackSize > 1 && (uint64)Stack->Amount < MaxStackSize) {
-				Stack->Amount++;
-				bIsAdded = true;
-				break;
-			}
-		} else {
-			if (FirstEmptySlot < 0) {
-				FirstEmptySlot = Idx;
-				if (MaxStackSize == 1) {
-					break;
-				}
-			}
-		}
-	}
+        // TODO: check inventory max volume and mass
+        if (Stack->Amount > 0) {
+            if (Stack->SandboxClassId == Obj->GetSandboxClassId() && MaxStackSize > 1 && (uint64)Stack->Amount < MaxStackSize) {
+                Stack->Amount++; // Увеличивает количество в стеке
+                bIsAdded = true; // Устанавливает флаг добавления
+                break;
+            }
+        } else {
+            if (FirstEmptySlot < 0) {
+                FirstEmptySlot = Idx; // Запоминает первый пустой слот
+                if (MaxStackSize == 1) {
+                    break;
+                }
+            }
+        }
+    }
 
-	if (!bIsAdded) {
-		if (FirstEmptySlot >= 0) {
-			FContainerStack* Stack = &Content[FirstEmptySlot];
-			Stack->Amount = 1;
-			Stack->SandboxClassId = Obj->GetSandboxClassId();
-		} else {
-			//UE_LOG(LogTemp, Warning, TEXT("AddObject -> Content.Num() -> MaxCapacity: %d %d"), Content.Num(), MaxCapacity);
-			if (Content.Num() < MaxCapacity) {
-				FContainerStack NewStack;
-				NewStack.Amount = 1;
-				NewStack.SandboxClassId = Obj->GetSandboxClassId();
-				Content.Add(NewStack);
-			} else {
-				return false;
-			}
-		}
-	}
-	
-	MakeStats();
-	bUpdated = true;
-	return true;
+    if (!bIsAdded) {
+        if (FirstEmptySlot >= 0) {
+            FContainerStack* Stack = &Content[FirstEmptySlot];
+            Stack->Amount = 1; // Устанавливает количество в стеке
+            Stack->SandboxClassId = Obj->GetSandboxClassId(); // Устанавливает идентификатор класса Sandbox
+        } else {
+            // UE_LOG(LogTemp, Warning, TEXT("AddObject -> Content.Num() -> MaxCapacity: %d %d"), Content.Num(), MaxCapacity);
+            if (Content.Num() < MaxCapacity) {
+                FContainerStack NewStack;
+                NewStack.Amount = 1; // Устанавливает количество в новом стеке
+                NewStack.SandboxClassId = Obj->GetSandboxClassId(); // Устанавливает идентификатор класса Sandbox
+                Content.Add(NewStack); // Добавляет новый стек в контейнер
+            } else {
+                return false; // Возвращает false, если контейнер переполнен
+            }
+        }
+    }
+
+    MakeStats(); // Обновляет статистику
+    bUpdated = true; // Устанавливает флаг обновления
+    return true; // Возвращает true
 }
 
 FContainerStack* UContainerComponent::GetSlot(const int Slot) {
-	if (!Content.IsValidIndex(Slot)) {
-		return nullptr;
-	}
+    if (!Content.IsValidIndex(Slot)) {
+        return nullptr; // Возвращает nullptr, если индекс недействителен
+    }
 
-	return &Content[Slot];
+    return &Content[Slot]; // Возвращает указатель на стек
 }
 
 const FContainerStack* UContainerComponent::GetSlot(const int Slot) const {
-	if (!Content.IsValidIndex(Slot)) {
-		return nullptr;
-	}
+    if (!Content.IsValidIndex(Slot)) {
+        return nullptr; // Возвращает nullptr, если индекс недействителен
+    }
 
-	return &Content[Slot];
+    return &Content[Slot]; // Возвращает указатель на стек
 }
+
 
 /*
 ASandboxObject* UContainerComponent::GetAvailableSlotObject(const int Slot) {
@@ -156,236 +146,234 @@ ASandboxObject* UContainerComponent::GetAvailableSlotObject(const int Slot) {
 */
 
 bool UContainerComponent::DecreaseObjectsInContainer(int Slot, int Num) {
-	FContainerStack* Stack = GetSlot(Slot);
+    FContainerStack* Stack = GetSlot(Slot);
 
-	if (Stack == NULL) { 
-		return false;
-	}
+    if (Stack == nullptr) {
+        return false; // Возвращает false, если стек не найден
+    }
 
-	if (Stack->Amount > 0) {
-		Stack->Amount -= Num;
-		if (Stack->Amount == 0) { 
-			Stack->Clear();
-		}
-	}
+    if (Stack->Amount > 0) {
+        Stack->Amount -= Num;
+        if (Stack->Amount == 0) {
+            Stack->Clear(); // Очищает стек, если количество равно 0
+        }
+    }
 
-	MakeStats();
-	bUpdated = true;
-	return Stack->Amount > 0;
+    MakeStats(); // Обновляет статистику
+    bUpdated = true; // Устанавливает флаг обновления
+    return Stack->Amount > 0; // Возвращает true, если в стеке остались объекты
 }
 
 void UContainerComponent::ChangeAmount(int Slot, int Num) {
-	FContainerStack* Stack = GetSlot(Slot);
+    FContainerStack* Stack = GetSlot(Slot);
 
-	//TODO check stack size
-	if (Stack) {
-		if (Stack->Amount > 0) {
-			Stack->Amount += Num;
-			if (Stack->Amount == 0) {
-				Stack->Clear();
-			}
+    // TODO: check stack size
+    if (Stack) {
+        if (Stack->Amount > 0) {
+            Stack->Amount += Num;
+            if (Stack->Amount == 0) {
+                Stack->Clear(); // Очищает стек, если количество равно 0
+            }
 
-			MakeStats();
-			bUpdated = true;
-		}
-	}
+            MakeStats(); // Обновляет статистику
+            bUpdated = true; // Устанавливает флаг обновления
+        }
+    }
 }
 
 bool UContainerComponent::IsSlotEmpty(int SlotId) const {
-	const FContainerStack* Stack = GetSlot(SlotId);
-	if (Stack) {
-		return Stack->IsEmpty();
-	}
+    const FContainerStack* Stack = GetSlot(SlotId);
+    if (Stack) {
+        return Stack->IsEmpty(); // Возвращает true, если слот пуст
+    }
 
-	return true;
+    return true; // Возвращает true, если стек не найден
 }
 
-void UContainerComponent::GetLifetimeReplicatedProps(TArray< FLifetimeProperty > & OutLifetimeProps) const {
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	DOREPLIFETIME(UContainerComponent, Content);
+void UContainerComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {
+    Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+    DOREPLIFETIME(UContainerComponent, Content); // Реплицирует свойство Content
 }
 
 void UContainerComponent::CopyTo(UContainerComponent* Target) {
-	Target->Content = this->Content;
-	bUpdated = true;
-	MakeStats();
+    Target->Content = this->Content; // Копирует содержимое контейнера
+    bUpdated = true; // Устанавливает флаг обновления
+    MakeStats(); // Обновляет статистику
 }
 
 TArray<uint64> UContainerComponent::GetAllObjects() const {
-	TArray<uint64> Result;
-	for (int Idx = 0; Idx < Content.Num(); Idx++) {
-		const FContainerStack* Stack = &Content[Idx];
-		if (Stack) {
-			const ASandboxObject* Obj = Stack->GetObject();
-			if (Obj) {
-				Result.Add(Obj->GetSandboxClassId());
-			}
-		}
-	}
+    TArray<uint64> Result;
+    for (int Idx = 0; Idx < Content.Num(); Idx++) {
+        const FContainerStack* Stack = &Content[Idx];
+        if (Stack) {
+            const ASandboxObject* Obj = Stack->GetObject();
+            if (Obj) {
+                Result.Add(Obj->GetSandboxClassId()); // Добавляет идентификатор класса объекта в результат
+            }
+        }
+    }
 
-	return Result;
+    return Result; // Возвращает массив идентификаторов объектов
 }
 
 bool IsSameObject(const FContainerStack* StackSourcePtr, const FContainerStack* StackTargetPtr) {
-	if (StackSourcePtr && StackTargetPtr) {
-		const auto* SourceObj = StackSourcePtr->GetObject();
-		const auto* TargetObj = StackTargetPtr->GetObject();
-		if (SourceObj && TargetObj) {
-			return SourceObj->GetSandboxClassId() == TargetObj->GetSandboxClassId();
-		}
+    if (StackSourcePtr && StackTargetPtr) {
+        const auto* SourceObj = StackSourcePtr->GetObject();
+        const auto* TargetObj = StackTargetPtr->GetObject();
+        if (SourceObj && TargetObj) {
+            return SourceObj->GetSandboxClassId() == TargetObj->GetSandboxClassId(); // Возвращает true, если объекты одинаковы
+        }
+    }
 
-	}
-
-	return false;
+    return false; // Возвращает false, если объекты не одинаковы
 }
 
 void NetObjectTransfer(ASandboxPlayerController* LocalController, const ASandboxObject* RemoteObj, const UContainerComponent* RemoteContainer, const FContainerStack Stack, int32 SlotId) {
-	const FString TargetContainerName = RemoteContainer->GetName();
-	LocalController->TransferContainerStack(RemoteObj->GetSandboxNetUid(), TargetContainerName, Stack, SlotId);
+    const FString TargetContainerName = RemoteContainer->GetName();
+    LocalController->TransferContainerStack(RemoteObj->GetSandboxNetUid(), TargetContainerName, Stack, SlotId); // Передает стек контейнера
 }
 
 void NetControllerTransfer(ASandboxPlayerController* LocalController, const UContainerComponent* RemoteContainer, const FContainerStack Stack, int32 SlotId) {
-	const FString TargetContainerName = RemoteContainer->GetName();
-	LocalController->TransferInventoryStack(TargetContainerName, Stack, SlotId);
+    const FString TargetContainerName = RemoteContainer->GetName();
+    LocalController->TransferInventoryStack(TargetContainerName, Stack, SlotId); // Передает стек инвентаря
 }
 
 bool UContainerComponent::SlotTransfer(int32 SlotSourceId, int32 SlotTargetId, AActor* SourceActor, UContainerComponent* SourceContainer, bool bOnlyOne) {
-		UContainerComponent* TargetContainer = this;
-		const FContainerStack* StackSourcePtr = SourceContainer->GetSlot(SlotSourceId);
-		const FContainerStack* StackTargetPtr = TargetContainer->GetSlot(SlotTargetId);
+    UContainerComponent* TargetContainer = this;
+    const FContainerStack* StackSourcePtr = SourceContainer->GetSlot(SlotSourceId);
+    const FContainerStack* StackTargetPtr = TargetContainer->GetSlot(SlotTargetId);
 
-		bool bInternalTransfer = (TargetContainer == SourceContainer);
+    bool bInternalTransfer = (TargetContainer == SourceContainer);
 
-		FContainerStack NewSourceStack;
-		FContainerStack NewTargetStack;
+    FContainerStack NewSourceStack;
+    FContainerStack NewTargetStack;
 
-		if (StackTargetPtr) {
-			NewTargetStack = *StackTargetPtr;
-		}
+    if (StackTargetPtr) {
+        NewTargetStack = *StackTargetPtr;
+    }
 
-		if (StackSourcePtr) {
-			NewSourceStack = *StackSourcePtr;
-		}
+    if (StackSourcePtr) {
+        NewSourceStack = *StackSourcePtr;
+    }
 
-		bool bResult = false;
+    bool bResult = false;
 
-		APawn* LocalPawn = (APawn*)TargetContainer->GetOwner();
-		if (LocalPawn) {
-			ASandboxPlayerController* LocalController = Cast<ASandboxPlayerController>(LocalPawn->GetController());
-			if (LocalController) {
-				const FString ContainerName = GetName();
-				const ASandboxObject* Obj = StackSourcePtr->GetObject();
-				bool isValid = LocalController->OnContainerDropCheck(SlotTargetId, *ContainerName, Obj);
-				if (!isValid) {
-					return false;
-				}
-			}
-		}
+    APawn* LocalPawn = (APawn*)TargetContainer->GetOwner();
+    if (LocalPawn) {
+        ASandboxPlayerController* LocalController = Cast<ASandboxPlayerController>(LocalPawn->GetController());
+        if (LocalController) {
+            const FString ContainerName = GetName();
+            const ASandboxObject* Obj = StackSourcePtr->GetObject();
+            bool isValid = LocalController->OnContainerDropCheck(SlotTargetId, *ContainerName, Obj);
+            if (!isValid) {
+                return false;
+            }
+        }
+    }
 
-		if (IsSameObject(StackSourcePtr, StackTargetPtr)) {
-			const ASandboxObject* Obj = (ASandboxObject*)StackTargetPtr->GetObject();
-			if (StackTargetPtr->Amount < (int)Obj->MaxStackSize) {
-				uint32 ChangeAmount = (bOnlyOne) ? 1 : StackSourcePtr->Amount;
-				uint32 NewAmount = StackTargetPtr->Amount + ChangeAmount;
+    if (IsSameObject(StackSourcePtr, StackTargetPtr)) {
+        const ASandboxObject* Obj = (ASandboxObject*)StackTargetPtr->GetObject();
+        if (StackTargetPtr->Amount < (int)Obj->MaxStackSize) {
+            uint32 ChangeAmount = (bOnlyOne) ? 1 : StackSourcePtr->Amount;
+            uint32 NewAmount = StackTargetPtr->Amount + ChangeAmount;
 
-				if (NewAmount <= Obj->MaxStackSize) {
-					NewTargetStack.Amount = NewAmount;
-					NewSourceStack.Amount -= ChangeAmount;
-				} else {
-					int D = NewAmount - Obj->MaxStackSize;
-					NewTargetStack.Amount = Obj->MaxStackSize;
-					NewSourceStack.Amount = D;
-				}
+            if (NewAmount <= Obj->MaxStackSize) {
+                NewTargetStack.Amount = NewAmount;
+                NewSourceStack.Amount -= ChangeAmount;
+            } else {
+                int D = NewAmount - Obj->MaxStackSize;
+                NewTargetStack.Amount = Obj->MaxStackSize;
+                NewSourceStack.Amount = D;
+            }
 
-				bResult = true;
-			}
-		} else {
-			if (bOnlyOne) {
-				if (!SourceContainer->IsSlotEmpty(SlotSourceId)) {
-					if (TargetContainer->IsSlotEmpty(SlotTargetId)) {
-						NewTargetStack = NewSourceStack;
-						NewTargetStack.Amount = 1;
-						NewSourceStack.Amount--;
-						bResult = true;
-					}
-				}
-			} else {
-				std::swap(NewTargetStack, NewSourceStack);
-				bResult = true;
-			}
-		}
+            bResult = true;
+        }
+    } else {
+        if (bOnlyOne) {
+            if (!SourceContainer->IsSlotEmpty(SlotSourceId)) {
+                if (TargetContainer->IsSlotEmpty(SlotTargetId)) {
+                    NewTargetStack = NewSourceStack;
+                    NewTargetStack.Amount = 1;
+                    NewSourceStack.Amount--;
+                    bResult = true;
+                }
+            }
+        } else {
+            std::swap(NewTargetStack, NewSourceStack);
+            bResult = true;
+        }
+    }
 
-		if (bResult) {
-			if (GetNetMode() == NM_Client) {
-				ASandboxPlayerController* LocalController = Cast<ASandboxPlayerController>(UGameplayStatics::GetPlayerController(GetWorld(), 0));
-				if (LocalController) {
-					if (bInternalTransfer) {
-						//TargetContainer->SetStackDirectly(NewTargetStack, SlotTargetId);
-						//SourceContainer->SetStackDirectly(NewSourceStack, SlotSourceId);
-					} 
+    if (bResult) {
+        if (GetNetMode() == NM_Client) {
+            ASandboxPlayerController* LocalController = Cast<ASandboxPlayerController>(UGameplayStatics::GetPlayerController(GetWorld(), 0));
+            if (LocalController) {
+                if (bInternalTransfer) {
+                    // TargetContainer->SetStackDirectly(NewTargetStack, SlotTargetId);
+                    // SourceContainer->SetStackDirectly(NewSourceStack, SlotSourceId);
+                }
 
-					ASandboxObject* TargetObj = Cast<ASandboxObject>(TargetContainer->GetOwner());
-					if (TargetObj) {
-						NetObjectTransfer(LocalController, TargetObj, TargetContainer, NewTargetStack, SlotTargetId);
-					}
+                ASandboxObject* TargetObj = Cast<ASandboxObject>(TargetContainer->GetOwner());
+                if (TargetObj) {
+                    NetObjectTransfer(LocalController, TargetObj, TargetContainer, NewTargetStack, SlotTargetId);
+                }
 
-					ASandboxObject* SourceObj = Cast<ASandboxObject>(SourceContainer->GetOwner());
-					if (SourceObj) {
-						NetObjectTransfer(LocalController, SourceObj, SourceContainer, NewSourceStack, SlotSourceId);
-					}
+                ASandboxObject* SourceObj = Cast<ASandboxObject>(SourceContainer->GetOwner());
+                if (SourceObj) {
+                    NetObjectTransfer(LocalController, SourceObj, SourceContainer, NewSourceStack, SlotSourceId);
+                }
 
-					APawn* TargetPawn = Cast<APawn>(TargetContainer->GetOwner());
-					if (TargetPawn) {
-						NetControllerTransfer(LocalController, TargetContainer, NewTargetStack, SlotTargetId);
-					}
+                APawn* TargetPawn = Cast<APawn>(TargetContainer->GetOwner());
+                if (TargetPawn) {
+                    NetControllerTransfer(LocalController, TargetContainer, NewTargetStack, SlotTargetId);
+                }
 
-					APawn* SourcePawn = Cast<APawn>(SourceContainer->GetOwner());
-					if (SourcePawn) {
-						NetControllerTransfer(LocalController, SourceContainer, NewSourceStack, SlotSourceId);
-					}
-				}
-			} else {
-				// server only
-				TargetContainer->SetStackDirectly(NewTargetStack, SlotTargetId);
-				SourceContainer->SetStackDirectly(NewSourceStack, SlotSourceId);
-			}
-		}
+                APawn* SourcePawn = Cast<APawn>(SourceContainer->GetOwner());
+                if (SourcePawn) {
+                    NetControllerTransfer(LocalController, SourceContainer, NewSourceStack, SlotSourceId);
+                }
+            }
+        } else {
+            // server only
+            TargetContainer->SetStackDirectly(NewTargetStack, SlotTargetId);
+            SourceContainer->SetStackDirectly(NewSourceStack, SlotSourceId);
+        }
+    }
 
-		bUpdated = bResult;
-		MakeStats();
-		return bResult;
+    bUpdated = bResult;
+    MakeStats();
+    return bResult;
 }
 
 void UContainerComponent::OnRep_Content() {
-	UE_LOG(LogTemp, Warning, TEXT("OnRep_Content: %s"), *GetName());
-	bUpdated = true;
-	MakeStats();
+    UE_LOG(LogTemp, Warning, TEXT("OnRep_Content: %s"), *GetName());
+    bUpdated = true;
+    MakeStats();
 }
 
 bool UContainerComponent::IsUpdated() {
-	return bUpdated;
+    return bUpdated; // Возвращает true, если контейнер обновлен
 }
 
 void UContainerComponent::ResetUpdatedFlag() {
-	bUpdated = false;
+    bUpdated = false; // Сбрасывает флаг обновления
 }
 
 void UContainerComponent::MakeStats() {
-	InventoryStats.Empty();
+    InventoryStats.Empty();
 
-	for (const auto& Stack : Content) {
-		if (Stack.Amount > 0 && Stack.SandboxClassId > 0) {
-			auto T = InventoryStats.FindOrAdd(Stack.SandboxClassId) + Stack.Amount;
-			InventoryStats[Stack.SandboxClassId] = T;
-		}
-	}
+    for (const auto& Stack : Content) {
+        if (Stack.Amount > 0 && Stack.SandboxClassId > 0) {
+            auto T = InventoryStats.FindOrAdd(Stack.SandboxClassId) + Stack.Amount;
+            InventoryStats[Stack.SandboxClassId] = T;
+        }
+    }
 }
 
 const TMap<uint64, uint32>& UContainerComponent::GetStats() const {
-	return InventoryStats;
+    return InventoryStats; // Возвращает статистику инвентаря
 }
 
-
 const TArray<FContainerStack>& UContainerComponent::GetContent() {
-	return Content;
+    return Content; // Возвращает содержимое контейнера
 }

@@ -1,122 +1,117 @@
-#pragma once
+#pragma once // Включает файл только один раз
 
-#include "Engine.h"
-#include "GameFramework/Actor.h"
-#include "SandboxObjectMap.h"
-#include "SandboxLevelController.generated.h"
+#include "Engine.h" // Включает основные функции движка
+#include "GameFramework/Actor.h" // Включает класс Actor
+#include "SandboxObjectMap.h" // Включает заголовочный файл для SandboxObjectMap
+#include "SandboxLevelController.generated.h" // Включает сгенерированный заголовочный файл для SandboxLevelController
 
-USTRUCT()
+USTRUCT() // Объявление структуры, доступной для рефлексии UObject
 struct FTempContainerStack {
-	GENERATED_BODY()
+    GENERATED_BODY() // Макрос для генерации тела структуры
 
-	UPROPERTY()
-	int SlotId;
+    UPROPERTY() // Свойство
+    int SlotId; // Идентификатор слота
 
-	UPROPERTY()
-	FContainerStack Stack;
+    UPROPERTY() // Свойство
+    FContainerStack Stack; // Стек контейнера
 };
 
-
-USTRUCT()
+USTRUCT() // Объявление структуры, доступной для рефлексии UObject
 struct UNREALSANDBOXTOOLKIT_API FSandboxObjectDescriptor {
-	GENERATED_BODY()
+    GENERATED_BODY() // Макрос для генерации тела структуры
 
-	UPROPERTY()
-	FTransform Transform;
+    UPROPERTY() // Свойство
+    FTransform Transform; // Преобразование
 
-	UPROPERTY()
-	uint64 ClassId;
+    UPROPERTY() // Свойство
+    uint64 ClassId; // Идентификатор класса
 
-	UPROPERTY()
-	FString NetUid;
+    UPROPERTY() // Свойство
+    FString NetUid; // Сетевой уникальный идентификатор
 
-	UPROPERTY()
-	int TypeId;
+    UPROPERTY() // Свойство
+    int TypeId; // Идентификатор типа
 
-	UPROPERTY()
-	TMap<FString, FString> PropertyMap;
+    UPROPERTY() // Свойство
+    TMap<FString, FString> PropertyMap; // Карта свойств
 
-	UPROPERTY()
-	TArray<FTempContainerStack> Container;
+    UPROPERTY() // Свойство
+    TArray<FTempContainerStack> Container; // Контейнер
 
-	static FSandboxObjectDescriptor MakeObjDescriptor(ASandboxObject* SandboxObject);
+    static FSandboxObjectDescriptor MakeObjDescriptor(ASandboxObject* SandboxObject); // Метод для создания дескриптора объекта Sandbox
 };
 
-
-UCLASS()
-class UNREALSANDBOXTOOLKIT_API ASandboxLevelController : public AActor {
-	GENERATED_BODY()
+UCLASS() // Объявление класса, доступного для рефлексии UObject
+class UNREALSANDBOXTOOLKIT_API ASandboxLevelController : public AActor { // Объявление класса ASandboxLevelController, наследующегося от AActor
+    GENERATED_BODY() // Макрос для генерации тела класса
 
 public:
-	ASandboxLevelController();
+    ASandboxLevelController(); // Конструктор
 
-	virtual void BeginPlay() override;
+    virtual void BeginPlay() override; // Метод, вызываемый при начале игры
 
-	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+    virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override; // Метод, вызываемый при завершении игры
 
-	virtual void Tick(float DeltaSeconds) override;
+    virtual void Tick(float DeltaSeconds) override; // Метод, вызываемый каждый тик
 
-	UPROPERTY(EditAnywhere, Category = "UnrealSandbox Toolkit")
-	FString MapName;
+    UPROPERTY(EditAnywhere, Category = "UnrealSandbox Toolkit") // Свойство, доступное для редактирования в редакторе
+    FString MapName; // Имя карты
 
-	UPROPERTY(EditAnywhere, Category = "UnrealSandbox Toolkit")
-	USandboxObjectMap* ObjectMap;
+    UPROPERTY(EditAnywhere, Category = "UnrealSandbox Toolkit") // Свойство, доступное для редактирования в редакторе
+    USandboxObjectMap* ObjectMap; // Карта объектов Sandbox
 
-	//TODO remove
-	TSubclassOf<ASandboxObject> GetSandboxObjectByClassId(int32 ClassId);
+    // TODO: remove
+    TSubclassOf<ASandboxObject> GetSandboxObjectByClassId(int32 ClassId); // Метод для получения объекта Sandbox по идентификатору класса
 
-	ASandboxObject* GetSandboxObject(uint64 ClassId);
+    ASandboxObject* GetSandboxObject(uint64 ClassId); // Метод для получения объекта Sandbox по идентификатору класса
 
-	static ASandboxObject* GetDefaultSandboxObject(uint64 ClassId);
+    static ASandboxObject* GetDefaultSandboxObject(uint64 ClassId); // Метод для получения объекта Sandbox по умолчанию
 
-	static ASandboxLevelController* GetInstance();
+    static ASandboxLevelController* GetInstance(); // Метод для получения экземпляра контроллера уровня
 
-	void PrepareMetaData();
+    void PrepareMetaData(); // Метод для подготовки метаданных
 
-	virtual ASandboxObject* SpawnSandboxObject(const int ClassId, const FTransform& Transform, const FString& SandboxNetUid = "");
+    virtual ASandboxObject* SpawnSandboxObject(const int ClassId, const FTransform& Transform, const FString& SandboxNetUid = ""); // Метод для создания объекта Sandbox
 
-	virtual bool RemoveSandboxObject(ASandboxObject* Obj);
+    virtual bool RemoveSandboxObject(ASandboxObject* Obj); // Метод для удаления объекта Sandbox
 
-	ASandboxObject* GetObjectByNetUid(FString NetUid);
+    ASandboxObject* GetObjectByNetUid(FString NetUid); // Метод для получения объекта Sandbox по сетевому идентификатору
 
-	ASandboxObject* SpawnPreparedObject(const FSandboxObjectDescriptor& ObjDesc);
+    ASandboxObject* SpawnPreparedObject(const FSandboxObjectDescriptor& ObjDesc); // Метод для создания подготовленного объекта Sandbox
 
-	ASandboxEffect* SpawnEffect(const int32 EffectId, const FTransform& Transform);
+    ASandboxEffect* SpawnEffect(const int32 EffectId, const FTransform& Transform); // Метод для создания эффекта Sandbox
 
 protected:
+    TMap<FString, TSubclassOf<ASandboxObject>> ObjectMapByClassName; // Карта объектов Sandbox по имени класса
 
-	TMap<FString, TSubclassOf<ASandboxObject>> ObjectMapByClassName;
+    // TMap<uint64, TSubclassOf<ASandboxObject>> ObjectMapById;
 
-	//TMap<uint64, TSubclassOf<ASandboxObject>> ObjectMapById;
+    virtual void SaveLevelJson(); // Метод для сохранения уровня в JSON
 
-	virtual void SaveLevelJson();
+    virtual void SaveLevelJsonExt(TSharedRef<TJsonWriter<TCHAR>> JsonWriter); // Метод для расширенного сохранения уровня в JSON
 
-	virtual void SaveLevelJsonExt(TSharedRef<TJsonWriter<TCHAR>> JsonWriter);
+    virtual void LoadLevelJson(); // Метод для загрузки уровня из JSON
 
-	virtual void LoadLevelJson();
+    virtual void LoadLevelJsonExt(TSharedPtr<FJsonObject> JsonParsed); // Метод для расширенной загрузки уровня из JSON
 
-	virtual void LoadLevelJsonExt(TSharedPtr<FJsonObject> JsonParsed);
+    void SaveObject(TSharedRef<TJsonWriter<TCHAR>> JsonWriter, const FSandboxObjectDescriptor& ObjDesc); // Метод для сохранения объекта в JSON
 
-	void SaveObject(TSharedRef <TJsonWriter<TCHAR>> JsonWriter, const FSandboxObjectDescriptor& ObjDesc);
+    virtual void SpawnPreparedObjects(const TArray<FSandboxObjectDescriptor>& ObjDescList); // Метод для создания подготовленных объектов
 
-	virtual void SpawnPreparedObjects(const TArray<FSandboxObjectDescriptor>& ObjDescList);
+    void SavePreparedObjects(const TArray<FSandboxObjectDescriptor>& ObjDescList); // Метод для сохранения подготовленных объектов
 
-	void SavePreparedObjects(const TArray<FSandboxObjectDescriptor>& ObjDescList);
+    virtual void PrepareObjectForSave(TArray<FSandboxObjectDescriptor>& ObjDescList); // Метод для подготовки объекта к сохранению
 
-	virtual void PrepareObjectForSave(TArray<FSandboxObjectDescriptor>& ObjDescList);
-
-	FString GetNewUid() const;
+    FString GetNewUid() const; // Метод для получения нового уникального идентификатора
 
 private:
+    bool bIsMetaDataReady = false; // Флаг готовности метаданных
 
-	bool bIsMetaDataReady = false;
+    static TMap<int32, TSubclassOf<ASandboxObject>> ObjectMapById; // Статическая карта объектов Sandbox по идентификатору класса
 
-	static TMap<int32, TSubclassOf<ASandboxObject>> ObjectMapById;
+    uint64 ObjectCounter; // Счетчик объектов
 
-	uint64 ObjectCounter;
+    TMap<FString, ASandboxObject*> GlobalObjectMap; // Глобальная карта объектов Sandbox
 
-	TMap<FString, ASandboxObject*> GlobalObjectMap;
-
-	static ASandboxLevelController* StaticSelf;
-
+    static ASandboxLevelController* StaticSelf; // Статический экземпляр контроллера уровня
 };
