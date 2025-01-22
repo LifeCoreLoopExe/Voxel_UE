@@ -317,6 +317,7 @@ bool UContainerComponent::SlotTransfer(int32 SlotSourceId, int32 SlotTargetId, A
             }
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 				bResult = true;
 			}
 		} else {
@@ -335,6 +336,8 @@ bool UContainerComponent::SlotTransfer(int32 SlotSourceId, int32 SlotTargetId, A
 			}
 		}
 =======
+=======
+>>>>>>> Stashed changes
             bResult = true; // Отметить результат как успешный
         }
     } else { // Если исходный и целевой стеки содержат разные объекты
@@ -352,6 +355,9 @@ bool UContainerComponent::SlotTransfer(int32 SlotSourceId, int32 SlotTargetId, A
             bResult = true; // Отметить результат как успешный
         }
     }
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 
     if (bResult) { // Если передача была успешной
