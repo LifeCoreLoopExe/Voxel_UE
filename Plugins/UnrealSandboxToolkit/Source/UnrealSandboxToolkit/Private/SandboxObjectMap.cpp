@@ -1,4 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Укажите свои авторские права на странице описания настроек проекта.
 
 #include "SandboxObjectMap.h"
-

@@ -1,7 +1,6 @@
 
 
-#include "SandboxEffect.h"
-
+//#include "SandboxEffect.h" // Подключение заголовочного файла SandboxEffect.h
 
 ASandboxEffect::ASandboxEffect() {
 	PrimaryActorTick.bCanEverTick = true;

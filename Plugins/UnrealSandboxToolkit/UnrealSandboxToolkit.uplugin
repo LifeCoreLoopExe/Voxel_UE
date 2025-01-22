@@ -1,24 +1,24 @@
 {
-	"FileVersion": 3,
-	"Version": 1,
-	"VersionName": "1.0",
-	"FriendlyName": "UnrealSandboxToolkit",
-	"Description": "",
-	"Category": "Other",
-	"CreatedBy": "",
-	"CreatedByURL": "",
-	"DocsURL": "",
-	"MarketplaceURL": "",
-	"SupportURL": "",
-	"CanContainContent": true,
-	"IsBetaVersion": false,
-	"IsExperimentalVersion": false,
-	"Installed": false,
-	"Modules": [
+	"FileVersion": 3, // Версия файла
+	"Version": 1, // Версия пакета
+	"VersionName": "1.0", // Имя версии
+	"FriendlyName": "UnrealSandboxToolkit", // Дружественное имя пакета
+	"Description": "", // Описание пакета
+	"Category": "Other", // Категория пакета
+	"CreatedBy": "", // Имя создателя
+	"CreatedByURL": "", // URL создателя
+	"DocsURL": "", // URL документации
+	"MarketplaceURL": "", // URL на маркетплейс
+	"SupportURL": "", // URL поддержки
+	"CanContainContent": true, // Может ли содержать контент
+	"IsBetaVersion": false, // Является ли версия бета-версией
+	"IsExperimentalVersion": false, // Является ли версия экспериментальной
+	"Installed": false, // Установлен ли пакет
+	"Modules": [ // Модули пакета
 		{
-			"Name": "UnrealSandboxToolkit",
-			"Type": "Runtime",
-			"LoadingPhase": "Default"
+			"Name": "UnrealSandboxToolkit", // Имя модуля
+			"Type": "Runtime", // Тип модуля (время выполнения)
+			"LoadingPhase": "Default" // Фаза загрузки модуля
 		}
 	]
 }

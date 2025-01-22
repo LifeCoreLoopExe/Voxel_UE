@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Заполните ваше уведомление о авторских правах на странице описания настроек проекта.
 
 #include "SandboxEnvironment.h"
 #include <ctime>
@@ -7,6 +7,7 @@
 
 
 ASandboxEnvironment::ASandboxEnvironment() {
+    // Устанавливаем параметры репликации и начальные настройки окружающей среды
 	bReplicates = true;
 	PrimaryActorTick.bCanEverTick = true;
 	TimeSpeed = 10.f;
@@ -21,6 +22,7 @@ ASandboxEnvironment::ASandboxEnvironment() {
 }
 
 float GetSkyLightIntensity(ASkyLight* SkyLight) {
+    // Получаем интенсивность освещения неба
 	if (SkyLight) {
 		USkyLightComponent* SkyLightComponent = SkyLight->GetLightComponent();
 		if (SkyLightComponent) {
@@ -32,6 +34,7 @@ float GetSkyLightIntensity(ASkyLight* SkyLight) {
 }
 
 float GetSunLightIntensity(ADirectionalLight* Light) {
+    // Получаем интенсивность солнечного света
 	if (Light) {
 		ULightComponent* LightComponent = Light->GetLightComponent();
 		if (LightComponent) {
@@ -44,51 +47,61 @@ float GetSunLightIntensity(ADirectionalLight* Light) {
 
 
 void ASandboxEnvironment::BeginPlay() {
+    // Начало игры, установка начальных значений
 	Super::BeginPlay();
 
 	if (DirectionalLightSource){
+		// Устанавливаем начальную ориентацию солнечного света
 		DirectionalLightSource->SetActorRotation(FRotator(-90.0f, 0.0f, 0.0f));
 		InitialSunIntensity = GetSunLightIntensity(DirectionalLightSource);
 	}
 
 	if (CaveSphere) {
+		// Устанавливаем видимость сферы пещеры
 		CaveSphere->GetStaticMeshComponent()->SetVisibility(bCaveMode);
 	}
 
 	if (GlobalFog) {
-		UExponentialHeightFogComponent* FogCmoponent = GlobalFog->GetComponent();
-		InitialFogDensity = FogCmoponent->FogDensity;
+		// Сохраняем начальную плотность тумана
+		UExponentialHeightFogComponent* FogComponent = GlobalFog->GetComponent();
+		InitialFogDensity = FogComponent->FogDensity;
 	}
 
 	if (SkyLight) {
+		// Сохраняем начальную интенсивность освещения неба
 		InitialSkyIntensity = GetSkyLightIntensity(SkyLight);
 	}
 }
 
-void ASandboxEnvironment::Tick( float DeltaTime ) {
-	Super::Tick( DeltaTime );
+void ASandboxEnvironment::Tick(float DeltaTime) {
+    // Обновляем состояние каждую итерацию
+	Super::Tick(DeltaTime);
 
-	if(bEnableDayNightCycle) {
+	if (bEnableDayNightCycle) {
+		// Выполняем цикл дня и ночи
 		PerformDayNightCycle();
 	}
 }
 
 void SetSkyLightIntensity(ASkyLight* SkyLight, float Intensity) {
+    // Устанавливаем интенсивность освещения неба
 	if (SkyLight) {
 		USkyLightComponent* SkyLightComponent = SkyLight->GetLightComponent();
 		if (SkyLightComponent) {
 			SkyLightComponent->Intensity = Intensity;
-			//SkyLightComponent->RecaptureSky(); // ue4 only
+			//SkyLightComponent->RecaptureSky(); // только для ue4
 			SkyLightComponent->MarkRenderStateDirty();
 		}
 	}
 }
 
 float ASandboxEnvironment::ClcHeightFactor() const {
+    // Функция для расчета коэффициента высоты
 	return 1.f;
 }
 
 void ASandboxEnvironment::PerformDayNightCycle() {
+    // Выполняем цикл дня и ночи
 	UWorld* World = GetWorld();
 	AGameStateBase* GameState = World->GetGameState();
 
@@ -97,7 +110,7 @@ void ASandboxEnvironment::PerformDayNightCycle() {
 	}
 
 	float RealServerTime = GameState->GetServerWorldTimeSeconds();
-	TSandboxGameTime GameDayTime = ClcGameTimeOfDay(RealServerTime, false); // use UTC time
+	TSandboxGameTime GameDayTime = ClcGameTimeOfDay(RealServerTime, false); // используем UTC время
 
 	//UE_LOG(LogTemp, Log, TEXT("%f"), RealServerTime);
 	//UE_LOG(LogTemp, Log, TEXT("%d : %d"), GameTimeOfDay.hours, GameTimeOfDay.minutes);
@@ -123,6 +136,7 @@ void ASandboxEnvironment::PerformDayNightCycle() {
 	sunpos(Time, GeoLoc, &SunPosition);
 
 	if (DirectionalLightSource) {
+		// Устанавливаем ориентацию солнечного света в зависимости от положения солнца
 		DirectionalLightSource->SetActorRotation(FRotator(-(90 - SunPosition.dZenithAngle), SunPosition.dAzimuth, 0.0f));
 
 		if (bCaveMode) {
@@ -142,7 +156,6 @@ void ASandboxEnvironment::PerformDayNightCycle() {
 			DirectionalLightSource->GetLightComponent()->SetIntensity(InitialSunIntensity * SunIntensity);
 		}
 
-
 		if (SkyLight) {
 			float DayNightIntensity = InitialSkyIntensity;
 
@@ -159,24 +172,26 @@ void ASandboxEnvironment::PerformDayNightCycle() {
 		}
 
 		if (GlobalFog) {
-			UExponentialHeightFogComponent* FogCmoponent = GlobalFog->GetComponent();
-			//FogCmoponent->SetFogInscatteringColor(FogColor);
+			UExponentialHeightFogComponent* FogComponent = GlobalFog->GetComponent();
+			//FogComponent->SetFogInscatteringColor(FogColor);
 
 			if (GlobalFogDensityCurve) {
 				const float DayNightFogDensity = InitialFogDensity * GlobalFogDensityCurve->GetFloatValue(H);
 				const float FogDensity = (DayNightFogDensity * HeightFactor) + (CaveFogDensity * (1 - HeightFactor));
 				//UE_LOG(LogTemp, Log, TEXT("H = %f, GlobalFogDensityCurve = %f, HeightFactor = %f ---> %f"), H, GlobalFogDensityCurve->GetFloatValue(H), HeightFactor, FogDensity);
-				FogCmoponent->SetFogDensity(FogDensity);
+				FogComponent->SetFogDensity(FogDensity);
 			}
 		}
 	}
 }
 
 float ASandboxEnvironment::ClcGameTime(float RealServerTime) {
+    // Расчет игрового времени
 	return (RealServerTime + RealTimeOffset) * TimeSpeed;
 }
 
 TSandboxGameTime ASandboxEnvironment::ClcLocalGameTime(float RealServerTime) {
+    // Преобразование игрового времени в локальное
 	long input_seconds = (long)(ClcGameTime(RealServerTime));
 
 	const int cseconds_in_day = 86400;
@@ -194,6 +209,7 @@ TSandboxGameTime ASandboxEnvironment::ClcLocalGameTime(float RealServerTime) {
 }
 
 TSandboxGameTime ASandboxEnvironment::ClcGameTimeOfDay(float RealServerTime, bool bAccordingTimeZone) {
+    // Вычисляем текущее игровое время в течение дня
 	std::tm initial_ptm {};
 	initial_ptm.tm_hour = 12;
 	initial_ptm.tm_min = 0;
@@ -204,7 +220,7 @@ TSandboxGameTime ASandboxEnvironment::ClcGameTimeOfDay(float RealServerTime, boo
 
 	time_t initial_time = std::mktime(&initial_ptm);
 
-	//static const uint64 InitialOffset = 60 * 60 * 12; // always start game at 12:00
+	//static const uint64 InitialOffset = 60 * 60 * 12; // всегда начинаем игру в 12:00
 	const uint64 InitialOffset = initial_time; 
 	const uint64 TimezoneOffset = bAccordingTimeZone ? 60 * 60 * TimeZone : 0;
 	const uint64 input_seconds = (int)ClcGameTime(RealServerTime) + InitialOffset + TimezoneOffset;
@@ -230,6 +246,7 @@ TSandboxGameTime ASandboxEnvironment::ClcGameTimeOfDay(float RealServerTime, boo
 }
 
 TSandboxGameTime ASandboxEnvironment::ClcGameTimeOfDay() {
+    // Получаем текущее игровое время в течение дня
 	UWorld* World = GetWorld();
 	AGameStateBase* GameState = World->GetGameState();
 
@@ -237,14 +254,16 @@ TSandboxGameTime ASandboxEnvironment::ClcGameTimeOfDay() {
 		return TSandboxGameTime();
 	}
 
-	return  ClcGameTimeOfDay(GameState->GetServerWorldTimeSeconds(), true);
+	return ClcGameTimeOfDay(GameState->GetServerWorldTimeSeconds(), true);
 }
 
 void ASandboxEnvironment::SetTimeOffset(float Offset) {
+    // Установка смещения времени
 	RealTimeOffset = Offset;
 }
 
 double ASandboxEnvironment::GetNewTimeOffset() {
+    // Получение нового смещения времени
 	AGameStateBase* GameState = GetWorld()->GetGameState();
 
 	if (!GameState) {
@@ -256,6 +275,7 @@ double ASandboxEnvironment::GetNewTimeOffset() {
 }
 
 void ASandboxEnvironment::UpdatePlayerPosition(FVector Pos, APlayerController* Controller) {
+    // Обновление позиции игрока
 	PlayerPos = Pos;
 
 	if (CaveSphere) {
@@ -268,10 +288,12 @@ void ASandboxEnvironment::UpdatePlayerPosition(FVector Pos, APlayerController* C
 }
 
 bool ASandboxEnvironment::IsCaveMode() {
+    // Проверка режима пещеры
 	return bCaveMode;
 }
 
 void ASandboxEnvironment::SetCaveMode(bool bCaveModeEnabled) {
+    // Установка режима пещеры
 	if (bCaveMode == bCaveModeEnabled) {
 		return;
 	}
@@ -284,10 +306,12 @@ void ASandboxEnvironment::SetCaveMode(bool bCaveModeEnabled) {
 }
 
 bool ASandboxEnvironment::IsNight() const {
+    // Проверка, ночь ли сейчас
 	return bIsNight;
 }
 
 FString ASandboxEnvironment::GetCurrentTimeAsString() {
+    // Получение текущего времени в строковом формате
 	UWorld* World = GetWorld();
 	AGameStateBase* GameState = World->GetGameState();
 
@@ -303,6 +327,7 @@ FString ASandboxEnvironment::GetCurrentTimeAsString() {
 }
 
 void ASandboxEnvironment::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {
+    // Определяем свойства, которые будут реплицироваться
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(ASandboxEnvironment, RealTimeOffset);
 	DOREPLIFETIME(ASandboxEnvironment, TimeSpeed);

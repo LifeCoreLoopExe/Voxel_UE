@@ -5,8 +5,9 @@
 #include "SandboxObject.h"
 #include "SandboxPlayerController.h"
 
+// Функция для получения цвета границы слота в зависимости от его идентификатора
 FLinearColor USandboxObjectContainerCellWidget::SlotBorderColor(int32 SlotId) {
-	if (ContainerName == TEXT("Inventory")) { 	//TODO fix
+	if (ContainerName == TEXT("Inventory")) { 	//TODO исправить
 		ASandboxPlayerController* PlayerController = Cast<ASandboxPlayerController>(GetOwningPlayer());
 		if (PlayerController) {
 			if (PlayerController->CurrentInventorySlot == SlotId) {
@@ -17,6 +18,7 @@ FLinearColor USandboxObjectContainerCellWidget::SlotBorderColor(int32 SlotId) {
 	return FLinearColor(0, 0, 0, 0.5);
 }
 
+// Функция для получения текста количества объектов в слоте
 FString USandboxObjectContainerCellWidget::SlotGetAmountText(int32 SlotId) {
 	UContainerComponent* Container = GetContainer();
 	if (Container != NULL) {
@@ -40,10 +42,12 @@ FString USandboxObjectContainerCellWidget::SlotGetAmountText(int32 SlotId) {
 	return TEXT("");
 }
 
+// Функция для проверки является ли ячейка внешней
 bool USandboxObjectContainerCellWidget::IsExternal() {
 	return CellBinding == EContainerCellBinding::ExternalObject;
 }
 
+// Функция для получения контейнера
 UContainerComponent* USandboxObjectContainerCellWidget::GetContainer() {
 	if (IsExternal()) {
 		ASandboxPlayerController* SandboxPC = Cast<ASandboxPlayerController>(GetOwningPlayer());
@@ -67,6 +71,7 @@ UContainerComponent* USandboxObjectContainerCellWidget::GetContainer() {
 	return nullptr;
 }
 
+// Функция для получения текстуры слота
 UTexture2D* USandboxObjectContainerCellWidget::GetSlotTexture(int32 SlotId) {
 	
 	UContainerComponent* Container = GetContainer();
@@ -87,10 +92,12 @@ UTexture2D* USandboxObjectContainerCellWidget::GetSlotTexture(int32 SlotId) {
 	return nullptr;
 }
 
+// Функция для выбора слота
 void USandboxObjectContainerCellWidget::SelectSlot(int32 SlotId) {
 	UE_LOG(LogTemp, Log, TEXT("SelectSlot: %d"), SlotId);
 }
 
+// Функция для наведения на слот
 void USandboxObjectContainerCellWidget::HoverSlot(int32 SlotId) {
 
 	ASandboxPlayerController* LocalController = Cast<ASandboxPlayerController>(UGameplayStatics::GetPlayerController(GetWorld(), 0));
@@ -110,6 +117,7 @@ void USandboxObjectContainerCellWidget::HoverSlot(int32 SlotId) {
 
 }
 
+// Функция для сброса слота
 bool USandboxObjectContainerCellWidget::SlotDrop(int32 SlotDropId, int32 SlotTargetId, AActor* SourceActor, UContainerComponent* SourceContainer, bool bOnlyOne) {
 	bool bResult = SlotDropInternal(SlotDropId, SlotTargetId, SourceActor, SourceContainer, bOnlyOne);
 	if (bResult) {
@@ -124,6 +132,7 @@ bool USandboxObjectContainerCellWidget::SlotDrop(int32 SlotDropId, int32 SlotTar
 	return bResult;
 }
 
+// Внутренняя функция для сброса слота
 bool USandboxObjectContainerCellWidget::SlotDropInternal(int32 SlotDropId, int32 SlotTargetId, AActor* SourceActor, UContainerComponent* SourceContainer, bool bOnlyOne) {
 	UE_LOG(LogTemp, Log, TEXT("UI cell drop: drop id -> %d ---> target id -> %d"), SlotDropId, SlotTargetId);
 
@@ -147,10 +156,12 @@ bool USandboxObjectContainerCellWidget::SlotDropInternal(int32 SlotDropId, int32
 	return TargetContainer->SlotTransfer(SlotDropId, SlotTargetId, SourceActor, SourceContainer, bOnlyOne);
 }
 
+// Функция для проверки, пуст ли слот
 bool USandboxObjectContainerCellWidget::SlotIsEmpty(int32 SlotId) {
-	return false;
+	return false; // Здесь всегда возвращается false
 }
 
+// Функция для обработки основного действия с ячейкой
 void USandboxObjectContainerCellWidget::HandleSlotMainAction(int32 SlotId) {
 	ASandboxPlayerController* SandboxPC = Cast<ASandboxPlayerController>(GetOwningPlayer());
 	if (SandboxPC) {
@@ -158,6 +169,7 @@ void USandboxObjectContainerCellWidget::HandleSlotMainAction(int32 SlotId) {
 	}
 }
 
+// Функция для получения открытого объекта
 AActor * USandboxObjectContainerCellWidget::GetOpenedObject() {
 	if (IsExternal()) {
 		ASandboxPlayerController* SandboxPC = Cast<ASandboxPlayerController>(GetOwningPlayer());
@@ -171,6 +183,8 @@ AActor * USandboxObjectContainerCellWidget::GetOpenedObject() {
 	return nullptr;
 }
 
+// Функция для получения открытого контейнера
 UContainerComponent * USandboxObjectContainerCellWidget::GetOpenedContainer() {
 	return GetContainer();
 }
+

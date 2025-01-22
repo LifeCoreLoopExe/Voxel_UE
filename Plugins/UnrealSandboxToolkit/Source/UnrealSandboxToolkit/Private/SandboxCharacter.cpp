@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Заполните ваше уведомление о копирайте на странице описания настроек проекта.
 
 #include "SandboxCharacter.h"
 //#include "SandboxPlayerController.h"
@@ -6,512 +6,510 @@
 
 
 ASandboxCharacter::ASandboxCharacter() {
-	VelocityHitThreshold = 1300;
-	VelocityHitFactor = 0.2f;
-	VelocityHitTimestamp = 0;
+	VelocityHitThreshold = 1300; // Порог скорости удара
+	VelocityHitFactor = 0.2f; // Фактор скорости удара
+	VelocityHitTimestamp = 0; // Время последнего удара
 
-	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
+	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f); // Инициализация размера капсулы
 
-	bUseControllerRotationPitch = false;
-	bUseControllerRotationYaw = false;
-	bUseControllerRotationRoll = false;
+	bUseControllerRotationPitch = false; // Не использовать вращение по оси Pitch от контроллера
+	bUseControllerRotationYaw = false; // Не использовать вращение по оси Yaw от контроллера
+	bUseControllerRotationRoll = false; // Не использовать вращение по оси Roll от контроллера
 
-	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
-	CameraBoom->SetupAttachment(RootComponent);
+	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom")); // Создание компонента SpringArm для камеры
+	CameraBoom->SetupAttachment(RootComponent); // Подключение к корневому компоненту
 
-	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
-	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
-	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
-	FollowCamera->SetRelativeLocation(FVector(0, 0, 0)); // Position the camera
+	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera")); // Создание компонента камеры
+	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Подключение камеры к концу SpringArm
+	FollowCamera->bUsePawnControlRotation = false; // Камера не вращается относительно SpringArm
+	FollowCamera->SetRelativeLocation(FVector(0, 0, 0)); // Установка позиции камеры
 
-	FirstPersonCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
-	FirstPersonCamera->SetupAttachment(GetMesh(), TEXT("head"));
-	FirstPersonCamera->SetRelativeLocation(FVector(10.0f, 32.0f, 0.f)); // Position the camera
-	FirstPersonCamera->SetRelativeRotation(FRotator(0, 90, -90));
-	FirstPersonCamera->bUsePawnControlRotation = true;
+	FirstPersonCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera")); // Создание компонента для камеры от первого лица
+	FirstPersonCamera->SetupAttachment(GetMesh(), TEXT("head")); // Подключение к мешу персонажа
+	FirstPersonCamera->SetRelativeLocation(FVector(10.0f, 32.0f, 0.f)); // Установка позиции камеры
+	FirstPersonCamera->SetRelativeRotation(FRotator(0, 90, -90)); // Установка вращения камеры
+	FirstPersonCamera->bUsePawnControlRotation = true; // Камера вращается с контроллером
 
-	GetCapsuleComponent()->OnComponentHit.AddDynamic(this, &ASandboxCharacter::OnHit);
+	GetCapsuleComponent()->OnComponentHit.AddDynamic(this, &ASandboxCharacter::OnHit); // Обработка события удара
 
-	// initial view
-	CurrentPlayerView = PlayerView::TOP_DOWN;
-	InitTopDownView();
+	// начальный вид
+	CurrentPlayerView = PlayerView::TOP_DOWN; // Установка начального вида
+	InitTopDownView(); // Инициализация верхнего вида
 
-	PrimaryActorTick.bCanEverTick = true;
-	PrimaryActorTick.bStartWithTickEnabled = true;
+	PrimaryActorTick.bCanEverTick = true; // Разрешение тиков для актора
+	PrimaryActorTick.bStartWithTickEnabled = true; // Начать с включенными тиками
 
-	MaxZoom = 500;
-	MaxZoomTopDown = 1200;
-	MinZoom = 100;
-	ZoomStep = 50;
+	MaxZoom = 500; // Максимальное увеличение
+	MaxZoomTopDown = 1200; // Максимальное увеличение для верхнего вида
+	MinZoom = 100; // Минимальное увеличение
+	ZoomStep = 50; // Шаг увеличения
 
-	WalkSpeed = 200;
-	RunSpeed = 600;
+	WalkSpeed = 200; // Скорость ходьбы
+	RunSpeed = 600; // Скорость бега
 
-	InteractionTargetLength = 200;
+	InteractionTargetLength = 200; // Длина цели взаимодействия
 
-	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed; // Установка максимальной скорости ходьбы
 }
 
 void ASandboxCharacter::BeginPlay() {
-	Super::BeginPlay();
+	Super::BeginPlay(); // Вызов базового метода BeginPlay
 	
-	CurrentPlayerView = InitialView;
+	CurrentPlayerView = InitialView; // Установка текущего вида на начальный
 
-	if (InitialView == PlayerView::TOP_DOWN) {
-		InitTopDownView();
+	if (InitialView == PlayerView::TOP_DOWN) { // Проверка на верхний вид
+		InitTopDownView(); // Инициализация верхнего вида
 	}
 
-	if (InitialView == PlayerView::THIRD_PERSON) {
-		InitThirdPersonView();
+	if (InitialView == PlayerView::THIRD_PERSON) { // Проверка на третий вид
+		InitThirdPersonView(); // Инициализация третьего вида
 	}
 
-	if (InitialView == PlayerView::FIRST_PERSON) {
-		InitFirstPersonView();
+	if (InitialView == PlayerView::FIRST_PERSON) { // Проверка на первый вид
+		InitFirstPersonView(); // Инициализация первого вида
 	}
 
 	/*
-	TArray<UVitalSystemComponent*> Components;
-	GetComponents<UVitalSystemComponent>(Components);
+	TArray<UVitalSystemComponent*> Components; // Массив компонентов VitalSystem
+	GetComponents<UVitalSystemComponent>(Components); // Получение всех компонентов VitalSystem
 
-	for (UVitalSystemComponent* VitalSysCmp : Components) {
-		VitalSystemComponent = VitalSysCmp;
-		break;
+	for (UVitalSystemComponent* VitalSysCmp : Components) { // Перебор компонентов
+		VitalSystemComponent = VitalSysCmp; // Установка компонента VitalSystem
+		break; // Выход из цикла после первой итерации
 	}
 	*/
 }
 
 void ASandboxCharacter::Tick( float DeltaTime ) {
-	Super::Tick( DeltaTime );
+	Super::Tick( DeltaTime ); // Вызов базового метода Tick
 
-	if (IsDead()) {
-		FVector MeshLoc = GetMesh()->GetSocketLocation(TEXT("pelvis"));
-		//GetCapsuleComponent()->SetWorldLocation(MeshLoc - InitialMeshTransform.GetLocation());
+	if (IsDead()) { // Проверка на смерть
+		FVector MeshLoc = GetMesh()->GetSocketLocation(TEXT("pelvis")); // Получение позиции меша
+		//GetCapsuleComponent()->SetWorldLocation(MeshLoc - InitialMeshTransform.GetLocation()); // Установка позиции капсулы
 	}
 }
 
 void ASandboxCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) {
-	Super::SetupPlayerInputComponent(InputComponent);
+	Super::SetupPlayerInputComponent(InputComponent); // Вызов базового метода настройки ввода игрока
 
-	//PlayerInputComponent->BindAction("ZoomIn", IE_Released, this, &ASandboxCharacter::ZoomIn);
-	//PlayerInputComponent->BindAction("ZoomOut", IE_Released, this, &ASandboxCharacter::ZoomOut);
+	//PlayerInputComponent->BindAction("ZoomIn", IE_Released, this, &ASandboxCharacter::ZoomIn); // Привязка действия увеличения
+	//PlayerInputComponent->BindAction("ZoomOut", IE_Released, this, &ASandboxCharacter::ZoomOut); // Привязка действия уменьшения
 
-	PlayerInputComponent->BindAction("Boost", IE_Pressed, this, &ASandboxCharacter::BoostOn);
-	PlayerInputComponent->BindAction("Boost", IE_Released, this, &ASandboxCharacter::BoostOff);
+	PlayerInputComponent->BindAction("Boost", IE_Pressed, this, &ASandboxCharacter::BoostOn); // Привязка действия ускорения
+	PlayerInputComponent->BindAction("Boost", IE_Released, this, &ASandboxCharacter::BoostOff); // Привязка действия прекращения ускорения
 
-	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ASandboxCharacter::Jump);
-	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ASandboxCharacter::StopJumping);
+	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ASandboxCharacter::Jump); // Привязка действия прыжка
+	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ASandboxCharacter::StopJumping); // Привязка действия прекращения прыжка
 
-	PlayerInputComponent->BindAxis("Move Forward / Backward", this, &ASandboxCharacter::MoveForward);
-	PlayerInputComponent->BindAxis("Move Right / Left", this, &ASandboxCharacter::MoveRight);
+	PlayerInputComponent->BindAxis("Move Forward / Backward", this, &ASandboxCharacter::MoveForward); // Привязка оси движения вперед/назад
+	PlayerInputComponent->BindAxis("Move Right / Left", this, &ASandboxCharacter::MoveRight); // Привязка оси движения вправо/влево
 
-	//InputComponent->BindAction("Test", IE_Pressed, this, &ASandboxCharacter::Test);
+	//InputComponent->BindAction("Test", IE_Pressed, this, &ASandboxCharacter::Test); // Привязка тестового действия
 
-	// We have 2 versions of the rotation bindings to handle different kinds of devices differently
-	// "turn" handles devices that provide an absolute delta, such as a mouse.
-	// "turnrate" is for devices that we choose to treat as a rate of change, such as an analog joystick
-	PlayerInputComponent->BindAxis("Turn Right / Left Mouse", this, &ASandboxCharacter::AddControllerYawInput);
-	//PlayerInputComponent->BindAxis("TurnRate", this, &ASandboxCharacter::TurnAtRate);
-	PlayerInputComponent->BindAxis("Look Up / Down Mouse", this, &ASandboxCharacter::AddControllerPitchInput);
-	//PlayerInputComponent->BindAxis("LookUpRate", this, &ASandboxCharacter::LookUpAtRate);
+	// У нас есть 2 версии привязок поворота для обработки различных типов устройств по-разному
+	// "turn" обрабатывает устройства, которые предоставляют абсолютный дельта, такие как мышь.
+	// "turnrate" предназначен для устройств, которые мы выбираем рассматривать как скорость изменения, такие как аналоговый джойстик
+	PlayerInputComponent->BindAxis("Turn Right / Left Mouse", this, &ASandboxCharacter::AddControllerYawInput); // Привязка оси поворота
+	//PlayerInputComponent->BindAxis("TurnRate", this, &ASandboxCharacter::TurnAtRate); // Привязка оси скорости поворота
+	PlayerInputComponent->BindAxis("Look Up / Down Mouse", this, &ASandboxCharacter::AddControllerPitchInput); // Привязка оси взгляда вверх/вниз
+	//PlayerInputComponent->BindAxis("LookUpRate", this, &ASandboxCharacter::LookUpAtRate); // Привязка оси скорости взгляда вверх
 }
 
 
 bool ASandboxCharacter::CanMove() {
-	//ASandboxPlayerController* C = Cast<ASandboxPlayerController>(GetController());
-	//if (!C || C->IsGameInputBlocked()) {
-	//	return false;
+	//ASandboxPlayerController* C = Cast<ASandboxPlayerController>(GetController()); // Привязка контроллера
+	//if (!C || C->IsGameInputBlocked()) { // Проверка на блокировку ввода игры
+	//	return false; // Невозможность движения
 	//}
 
-	return true;
+	return true; // Возможность движения
 }
 
 void ASandboxCharacter::BoostOn() {
-	if (!CanMove()) {
-		return;
+	if (!CanMove()) { // Проверка на возможность движения
+		return; // Возврат, если движение невозможно
 	}
 
 	/*
-	TArray<UVitalSystemComponent*> Components;
-	GetComponents<UVitalSystemComponent>(Components);
-	if (Components.Num() > 0) {
-		UVitalSystemComponent* Vs = Components[0];
-		if (Vs->CanBoost()) {
-			GetCharacterMovement()->MaxWalkSpeed = RunSpeed;
-			return;
+	TArray<UVitalSystemComponent*> Components; // Массив компонентов VitalSystem
+	GetComponents<UVitalSystemComponent>(Components); // Получение всех компонентов VitalSystem
+	if (Components.Num() > 0) { // Проверка на наличие компонентов
+		UVitalSystemComponent* Vs = Components[0]; // Установка первого компонента
+		if (Vs->CanBoost()) { // Проверка на возможность ускорения
+			GetCharacterMovement()->MaxWalkSpeed = RunSpeed; // Установка скорости бега
+			return; // Возврат
 		}
 	} else {
-		GetCharacterMovement()->MaxWalkSpeed = RunSpeed;
+		GetCharacterMovement()->MaxWalkSpeed = RunSpeed; // Установка скорости бега
 	}
 	*/
 }
 
 void ASandboxCharacter::BoostOff() {
-	if (!CanMove()) {
-		return;
+	if (!CanMove()) { // Проверка на возможность движения
+		return; // Возврат, если движение невозможно
 	}
 
-	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed; // Установка скорости ходьбы
 }
 
 void ASandboxCharacter::Jump() {
-	if (!CanMove()) {
-		return;
+	if (!CanMove()) { // Проверка на возможность движения
+		return; // Возврат, если движение невозможно
 	}
 
-	if (CurrentPlayerView == PlayerView::TOP_DOWN) {
-		return;
+	if (CurrentPlayerView == PlayerView::TOP_DOWN) { // Проверка на верхний вид
+		return; // Возврат
 	}
 
-	if (IsDead()) {
-		return;
+	if (IsDead()) { // Проверка на смерть
+		return; // Возврат
 	}
 
-	Super::Jump();
+	Super::Jump(); // Вызов базового метода прыжка
 }
 
 void ASandboxCharacter::StopJumping() {
-	if (IsDead()) {
-		return;
+	if (IsDead()) { // Проверка на смерть
+		return; // Возврат
 	}
 
-	Super::StopJumping();
+	Super::StopJumping(); // Вызов базового метода прекращения прыжка
 }
 
 
 void ASandboxCharacter::ZoomIn() {
-	if (!CanMove()) {
-		return;
+	if (!CanMove()) { // Проверка на возможность движения
+		return; // Возврат, если движение невозможно
 	}
 
-	if (GetCameraBoom() == NULL) {
-		return;
+	if (GetCameraBoom() == NULL) { // Проверка на наличие CameraBoom
+		return; // Возврат
 	}
 
-	if (CurrentPlayerView == PlayerView::FIRST_PERSON) {
-		return;
+	if (CurrentPlayerView == PlayerView::FIRST_PERSON) { // Проверка на первый вид
+		return; // Возврат
 	}
 
-	if (GetCameraBoom()->TargetArmLength > MinZoom) {
-		GetCameraBoom()->TargetArmLength -= ZoomStep;
+	if (GetCameraBoom()->TargetArmLength > MinZoom) { // Проверка на максимальное увеличение
+		GetCameraBoom()->TargetArmLength -= ZoomStep; // Уменьшение длины CameraBoom
 	} else {
-		if (bEnableAutoSwitchView) {
-			InitFirstPersonView();
+		if (bEnableAutoSwitchView) { // Проверка на автоматическое переключение вида
+			InitFirstPersonView(); // Инициализация первого вида
 		}
 	}
 
-	//UE_LOG(LogVt, Log, TEXT("ZoomIn: %f"), GetCameraBoom()->TargetArmLength);
+	//UE_LOG(LogVt, Log, TEXT("ZoomIn: %f"), GetCameraBoom()->TargetArmLength); // Логирование увеличения
 }
 
 void ASandboxCharacter::ZoomOut() {
-	if (!CanMove()) {
-		return;
+	if (!CanMove()) { // Проверка на возможность движения
+		return; // Возврат, если движение невозможно
 	}
 
-	if (GetCameraBoom() == NULL) return;
+	if (GetCameraBoom() == NULL) return; // Проверка на наличие CameraBoom
 
-	if (CurrentPlayerView == PlayerView::FIRST_PERSON) {
-		if (bEnableAutoSwitchView) {
-			InitThirdPersonView();
-			return;
+	if (CurrentPlayerView == PlayerView::FIRST_PERSON) { // Проверка на первый вид
+		if (bEnableAutoSwitchView) { // Проверка на автоматическое переключение вида
+			InitThirdPersonView(); // Инициализация третьего вида
+			return; // Возврат
 		}
 	};
 
-	float MZ = (CurrentPlayerView == PlayerView::TOP_DOWN) ? MaxZoomTopDown : MaxZoom;
+	float MZ = (CurrentPlayerView == PlayerView::TOP_DOWN) ? MaxZoomTopDown : MaxZoom; // Установка максимального увеличения
 
-	if (GetCameraBoom()->TargetArmLength < MZ) {
-		GetCameraBoom()->TargetArmLength += ZoomStep;
+	if (GetCameraBoom()->TargetArmLength < MZ) { // Проверка на максимальное увеличение
+		GetCameraBoom()->TargetArmLength += ZoomStep; // Увеличение длины CameraBoom
 	}
 
-	//UE_LOG(LogVt, Log, TEXT("ZoomOut: %f"), GetCameraBoom()->TargetArmLength);
+	//UE_LOG(LogVt, Log, TEXT("ZoomOut: %f"), GetCameraBoom()->TargetArmLength); // Логирование уменьшения
 }
 
 FVector ASandboxCharacter::GetThirdPersonViewCameraPos() {
-	return FVector(0, 0, 64);
+	return FVector(0, 0, 64); // Позиция камеры для третьего вида
 }
 
 FRotator ASandboxCharacter::GetTopDownViewCameraRot() {
-	return FRotator(-50.f, 0.f, 0.f); //FRotator(-60.f, 0.f, 0.f)
+	return FRotator(-50.f, 0.f, 0.f); // Вращение камеры для верхнего вида
 }
 
 void ASandboxCharacter::InitTopDownView() {
-	if (IsDead()) {
-		return;
+	if (IsDead()) { // Проверка на смерть
+		return; // Возврат
 	}
 
-	// Configure character movement
-	GetCharacterMovement()->bOrientRotationToMovement = true; // Rotate character to moving direction
-	GetCharacterMovement()->RotationRate = FRotator(0.f, 640.f, 0.f);
-	GetCharacterMovement()->bConstrainToPlane = true;
-	GetCharacterMovement()->bSnapToPlaneAtStart = true;
+	// Настройка движения персонажа
+	GetCharacterMovement()->bOrientRotationToMovement = true; // Вращение персонажа в сторону движения
+	GetCharacterMovement()->RotationRate = FRotator(0.f, 640.f, 0.f); // Установка скорости вращения
+	GetCharacterMovement()->bConstrainToPlane = true; // Ограничение движения по плоскости
+	GetCharacterMovement()->bSnapToPlaneAtStart = true; // Привязка к плоскости в начале
 
-	CameraBoom->SetUsingAbsoluteRotation(true); // Don't want arm to rotate when character does
+	CameraBoom->SetUsingAbsoluteRotation(true); // Не вращать CameraBoom при вращении персонажа
 
-	CameraBoom->SetRelativeRotation(GetTopDownViewCameraRot());
-	CameraBoom->TargetArmLength = MaxZoomTopDown;
-	CameraBoom->bDoCollisionTest = false; // Don't want to pull camera in when it collides with level
-	CameraBoom->bUsePawnControlRotation = false; // Rotate the arm based on the controller
-	CameraBoom->ProbeSize = 0;
-	CameraBoom->SetRelativeLocation(FVector(0, 0, 0));
+	CameraBoom->SetRelativeRotation(GetTopDownViewCameraRot()); // Установка вращения CameraBoom
+	CameraBoom->TargetArmLength = MaxZoomTopDown; // Установка длины CameraBoom
+	CameraBoom->bDoCollisionTest = false; // Не проверять столкновения для CameraBoom
+	CameraBoom->bUsePawnControlRotation = false; // Вращать CameraBoom по контроллеру
+	CameraBoom->ProbeSize = 0; // Установка размера проверки
+	CameraBoom->SetRelativeLocation(FVector(0, 0, 0)); // Установка позиции CameraBoom
 
-	FirstPersonCamera->Deactivate();
-	FollowCamera->Activate();
+	FirstPersonCamera->Deactivate(); // Деактивация камеры от первого лица
+	FollowCamera->Activate(); // Активация основной камеры
 
-	bUseControllerRotationYaw = false;
+	bUseControllerRotationYaw = false; // Не использовать вращение по оси Yaw от контроллера
 
-	CurrentPlayerView = PlayerView::TOP_DOWN;
+	CurrentPlayerView = PlayerView::TOP_DOWN; // Установка текущего вида на верхний
 
 	/*
-	ASandboxPlayerController* C = Cast<ASandboxPlayerController>(GetController());
-	if (C != NULL) {
-		C->ShowMouseCursor(true);
+	ASandboxPlayerController* C = Cast<ASandboxPlayerController>(GetController()); // Привязка контроллера
+	if (C != NULL) { // Проверка на наличие контроллера
+		C->ShowMouseCursor(true); // Показать курсор мыши
 	}
 	*/
 }
 
 void ASandboxCharacter::InitThirdPersonView() {
-	// Configure character movement
-	GetCharacterMovement()->bOrientRotationToMovement = true; // Character moves in the direction of input...
-	GetCharacterMovement()->RotationRate = FRotator(0.0f, 540.0f, 0.0f); // ...at this rotation rate
-	//GetCharacterMovement()->JumpZVelocity = 600.f;
-	//GetCharacterMovement()->AirControl = 0.2f;
+	// Настройка движения персонажа
+	GetCharacterMovement()->bOrientRotationToMovement = true; // Персонаж движется в направлении ввода
+	GetCharacterMovement()->RotationRate = FRotator(0.0f, 540.0f, 0.0f); // Установка скорости вращения
+	//GetCharacterMovement()->JumpZVelocity = 600.f; // Установка скорости прыжка
+	//GetCharacterMovement()->AirControl = 0.2f; // Установка контроля в воздухе
 
-	CameraBoom->TargetArmLength = 300.0f; // The camera follows at this distance behind the character
-	CameraBoom->bUsePawnControlRotation = true; // Rotate the arm based on the controller
-	CameraBoom->bDoCollisionTest = true;
-	CameraBoom->ProbeSize = 12;
-	CameraBoom->SetRelativeLocation(GetThirdPersonViewCameraPos());
+	CameraBoom->TargetArmLength = 300.0f; // Установка расстояния камеры за персонажем
+	CameraBoom->bUsePawnControlRotation = true; // Вращение CameraBoom по контроллеру
+	CameraBoom->bDoCollisionTest = true; // Проверка столкновений для CameraBoom
+	CameraBoom->ProbeSize = 12; // Установка размера проверки
+	CameraBoom->SetRelativeLocation(GetThirdPersonViewCameraPos()); // Установка позиции CameraBoom
 
-	FirstPersonCamera->Deactivate();
-	FollowCamera->Activate();
+	FirstPersonCamera->Deactivate(); // Деактивация камеры от первого лица
+	FollowCamera->Activate(); // Активация основной камеры
 
-	bUseControllerRotationYaw = false;
+	bUseControllerRotationYaw = false; // Не использовать вращение по оси Yaw от контроллера
 
-	CurrentPlayerView = PlayerView::THIRD_PERSON;
+	CurrentPlayerView = PlayerView::THIRD_PERSON; // Установка текущего вида на третий
 
 	/*
-	ASandboxPlayerController* Controller = Cast<ASandboxPlayerController>(GetController());
-	if (Controller) {
-		Controller->ShowMouseCursor(false);
+	ASandboxPlayerController* Controller = Cast<ASandboxPlayerController>(GetController()); // Привязка контроллера
+	if (Controller) { // Проверка на наличие контроллера
+		Controller->ShowMouseCursor(false); // Скрыть курсор мыши
 	}
 	*/
 }
 
 void ASandboxCharacter::InitFirstPersonView() {
-	if (IsDead()) {
-		return;
+	if (IsDead()) { // Проверка на смерть
+		return; // Возврат
 	}
 
-	// Configure character movement
-	GetCharacterMovement()->bOrientRotationToMovement = false; // Character moves in the direction of input...
-	//GetCharacterMovement()->JumpZVelocity = 600.f;
-	//GetCharacterMovement()->AirControl = 0.2f;
+	// Настройка движения персонажа
+	GetCharacterMovement()->bOrientRotationToMovement = false; // Персонаж движется в направлении ввода
+	//GetCharacterMovement()->JumpZVelocity = 600.f; // Установка скорости прыжка
+	//GetCharacterMovement()->AirControl = 0.2f; // Установка контроля в воздухе
 
-	FirstPersonCamera->Activate();
-	FollowCamera->Deactivate();
+	FirstPersonCamera->Activate(); // Активация камеры от первого лица
+	FollowCamera->Deactivate(); // Деактивация основной камеры
 
-	bUseControllerRotationYaw = true;
+	bUseControllerRotationYaw = true; // Использовать вращение по оси Yaw от контроллера
 
-	CurrentPlayerView = PlayerView::FIRST_PERSON;
+	CurrentPlayerView = PlayerView::FIRST_PERSON; // Установка текущего вида на первый
 
 	/*
-	ASandboxPlayerController* Controller = Cast<ASandboxPlayerController>(GetController());
-	if (Controller) {
-		Controller->ShowMouseCursor(false);
+	ASandboxPlayerController* Controller = Cast<ASandboxPlayerController>(GetController()); // Привязка контроллера
+	if (Controller) { // Проверка на наличие контроллера
+		Controller->ShowMouseCursor(false); // Скрыть курсор мыши
 	}
 	*/
 }
 
 void ASandboxCharacter::AddControllerYawInput(float Val) {
-	if (!CanMove()) {
-		return;
+	if (!CanMove()) { // Проверка на возможность движения
+		return; // Возврат
 	}
 
-	//if (Controller->IsGameInputBlocked() && CurrentPlayerView != PlayerView::THIRD_PERSON) {
-		//return;
+	//if (Controller->IsGameInputBlocked() && CurrentPlayerView != PlayerView::THIRD_PERSON) { // Проверка на блокировку ввода игры
+		//return; // Возврат
 	//}
 
-	if (CurrentPlayerView == PlayerView::TOP_DOWN) {
-		return;
+	if (CurrentPlayerView == PlayerView::TOP_DOWN) { // Проверка на верхний вид
+		return; // Возврат
 	}
 
-	Super::AddControllerYawInput(Val);
-
+	Super::AddControllerYawInput(Val); // Вызов базового метода добавления вращения по оси Yaw
 }
 
 void ASandboxCharacter::AddControllerPitchInput(float Val) {
-	if (!CanMove()) {
-		return;
+	if (!CanMove()) { // Проверка на возможность движения
+		return; // Возврат
 	}
 
 	/*
-	ASandboxPlayerController* Controller = Cast<ASandboxPlayerController>(GetController());
-	if (Controller->IsGameInputBlocked() && CurrentPlayerView != PlayerView::THIRD_PERSON) {
-		//return;
+	ASandboxPlayerController* Controller = Cast<ASandboxPlayerController>(GetController()); // Привязка контроллера
+	if (Controller->IsGameInputBlocked() && CurrentPlayerView != PlayerView::THIRD_PERSON) { // Проверка на блокировку ввода игры
+		//return; // Возврат
 	}
 	*/
 
-	if (CurrentPlayerView == PlayerView::TOP_DOWN){
-		return;
+	if (CurrentPlayerView == PlayerView::TOP_DOWN){ // Проверка на верхний вид
+		return; // Возврат
 	}
 
-	Super::AddControllerPitchInput(Val);
+	Super::AddControllerPitchInput(Val); // Вызов базового метода добавления вращения по оси Pitch
 }
 
 void ASandboxCharacter::TurnAtRate(float Rate) {
-	if (!CanMove()) {
-		return;
+	if (!CanMove()) { // Проверка на возможность движения
+		return; // Возврат
 	}
 
-	if (CurrentPlayerView == PlayerView::TOP_DOWN) {
-		return;
+	if (CurrentPlayerView == PlayerView::TOP_DOWN) { // Проверка на верхний вид
+		return; // Возврат
 	}
 
-	// calculate delta for this frame from the rate information
-	//AddControllerYawInput(Rate * BaseTurnRate * GetWorld()->GetDeltaSeconds());
+	// вычислить дельту за этот кадр на основе информации о скорости
+	//AddControllerYawInput(Rate * BaseTurnRate * GetWorld()->GetDeltaSeconds()); // Добавление вращения по оси Yaw
 }
 
 void ASandboxCharacter::LookUpAtRate(float Rate) {
-	if (!CanMove()) {
-		return;
+	if (!CanMove()) { // Проверка на возможность движения
+		return; // Возврат
 	}
 
-	if (CurrentPlayerView == PlayerView::TOP_DOWN) {
-		return;
+	if (CurrentPlayerView == PlayerView::TOP_DOWN) { // Проверка на верхний вид
+		return; // Возврат
 	}
 
-	// calculate delta for this frame from the rate information
-	//AddControllerPitchInput(Rate * BaseLookUpRate * GetWorld()->GetDeltaSeconds());
+	// вычислить дельту за этот кадр на основе информации о скорости
+	//AddControllerPitchInput(Rate * BaseLookUpRate * GetWorld()->GetDeltaSeconds()); // Добавление вращения по оси Pitch
 }
 
 
 void ASandboxCharacter::MoveForward(float Value) {
-	if (!CanMove()) {
-		return;
+	if (!CanMove()) { // Проверка на возможность движения
+		return; // Возврат
 	}
 
-	if (IsDead()) { 
-		return; 
+	if (IsDead()) { // Проверка на смерть
+		return; // Возврат
 	};
 
-	if (CurrentPlayerView == PlayerView::THIRD_PERSON) {
-		if (Value != 0.0f)	{
-			// find out which way is forward
-			const FRotator Rotation = Controller->GetControlRotation();
-			const FRotator YawRotation(0, Rotation.Yaw, 0);
+	if (CurrentPlayerView == PlayerView::THIRD_PERSON) { // Проверка на третий вид
+		if (Value != 0.0f) { // Проверка на ненулевое значение
+			// выяснить, в каком направлении вперед
+			const FRotator Rotation = Controller->GetControlRotation(); // Получение вращения контроллера
+			const FRotator YawRotation(0, Rotation.Yaw, 0); // Установка вращения по оси Yaw
 
-			// get forward vector
-			const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-			AddMovementInput(Direction, Value);
+			// получить вектор вперед
+			const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X); // Получение вектора вперед
+			AddMovementInput(Direction, Value); // Добавление движения в этом направлении
 		}
 	}
 
-	if (CurrentPlayerView == PlayerView::FIRST_PERSON) {
-		if (Value != 0.0f)	{
-			// add movement in that direction
-			AddMovementInput(GetActorForwardVector(), Value);
+	if (CurrentPlayerView == PlayerView::FIRST_PERSON) { // Проверка на первый вид
+		if (Value != 0.0f) { // Проверка на ненулевое значение
+			// добавление движения в этом направлении
+			AddMovementInput(GetActorForwardVector(), Value); // Добавление движения вперед
 		}
 	}
 }
 
 void ASandboxCharacter::MoveRight(float Value) {
-	if (!CanMove()) {
-		return;
+	if (!CanMove()) { // Проверка на возможность движения
+		return; // Возврат
 	}
 
-	if (IsDead()) { 
-		return;
+	if (IsDead()) { // Проверка на смерть
+		return; // Возврат
 	};
 
-	if (CurrentPlayerView == PlayerView::THIRD_PERSON) {
-		if (Value != 0.0f) {
-			// find out which way is right
-			const FRotator Rotation = Controller->GetControlRotation();
-			const FRotator YawRotation(0, Rotation.Yaw, 0);
+	if (CurrentPlayerView == PlayerView::THIRD_PERSON) { // Проверка на третий вид
+		if (Value != 0.0f) { // Проверка на ненулевое значение
+			// выяснить, в каком направлении вправо
+			const FRotator Rotation = Controller->GetControlRotation(); // Получение вращения контроллера
+			const FRotator YawRotation(0, Rotation.Yaw, 0); // Установка вращения по оси Yaw
 
-			// get right vector 
-			const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
-			// add movement in that direction
-			AddMovementInput(Direction, Value);
+			// получить вектор вправо 
+			const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y); // Получение вектора вправо
+			// добавление движения в этом направлении
+			AddMovementInput(Direction, Value); // Добавление движения вправо
 		}
 	}
 
-	if (CurrentPlayerView == PlayerView::FIRST_PERSON) {
-		if (Value != 0.0f) {
-			// add movement in that direction
-			AddMovementInput(GetActorRightVector(), Value);
+	if (CurrentPlayerView == PlayerView::FIRST_PERSON) { // Проверка на первый вид
+		if (Value != 0.0f) { // Проверка на ненулевое значение
+			// добавление движения в этом направлении
+			AddMovementInput(GetActorRightVector(), Value); // Добавление движения вправо
 		}
 	}
 }
 
 PlayerView ASandboxCharacter::GetSandboxPlayerView() {
-	return CurrentPlayerView;
+	return CurrentPlayerView; // Возврат текущего вида игрока
 }
 
 void ASandboxCharacter::SetSandboxPlayerView(PlayerView SandboxView) {
-	CurrentPlayerView = SandboxView;
+	CurrentPlayerView = SandboxView; // Установка текущего вида игрока
 }
 
 /*
 void ASandboxCharacter::Test() {
-	if(!IsDead()) {
-		Kill();
+	if(!IsDead()) { // Проверка на смерть
+		Kill(); // Убийство персонажа
 	} else {
-		LiveUp();
+		LiveUp(); // Восстановление персонажа
 	}
 }
 */
 
 void ASandboxCharacter::OnDeath() {
-	GetMesh()->SetSimulatePhysics(true);
-	GetMesh()->SetAllBodiesBelowPhysicsBlendWeight(TEXT("pelvis"), 1);
+	GetMesh()->SetSimulatePhysics(true); // Включение физики для меша
+	GetMesh()->SetAllBodiesBelowPhysicsBlendWeight(TEXT("pelvis"), 1); // Установка веса физики для всех тел ниже "pelvis"
 }
 
 void ASandboxCharacter::Kill() {
-	if (!IsDead()) {
-		if (CurrentPlayerView == PlayerView::FIRST_PERSON) {
-			InitThirdPersonView();
+	if (!IsDead()) { // Проверка на смерть
+		if (CurrentPlayerView == PlayerView::FIRST_PERSON) { // Проверка на первый вид
+			InitThirdPersonView(); // Инициализация третьего вида
 		}
 
-		InitialMeshTransform = GetMesh()->GetRelativeTransform();
-		bIsDead = true;
+		InitialMeshTransform = GetMesh()->GetRelativeTransform(); // Получение начальной трансформа меша
+		bIsDead = true; // Установка состояния смерти
 
-		OnDeath();
+		OnDeath(); // Вызов метода смерти
 	}
 }
 
 void ASandboxCharacter::LiveUp() {
-	if (IsDead()) {
-		GetMesh()->SetSimulatePhysics(false);
-		bIsDead = false;
-		GetMesh()->SetupAttachment(GetCapsuleComponent(), NAME_None);
-		GetMesh()->SetRelativeTransform(InitialMeshTransform);
+	if (IsDead()) { // Проверка на смерть
+		GetMesh()->SetSimulatePhysics(false); // Выключение физики для меша
+		bIsDead = false; // Установка состояния живым
+		GetMesh()->SetupAttachment(GetCapsuleComponent(), NAME_None); // Подключение меша к капсуле
+		GetMesh()->SetRelativeTransform(InitialMeshTransform); // Установка начальной трансформа меша
 	}
 }
 
 int ASandboxCharacter::GetSandboxTypeId() {
-	return SandboxTypeId;
+	return SandboxTypeId; // Возврат идентификатора типа песочницы
 }
 
 FString ASandboxCharacter::GetSandboxPlayerUid() {
-	return "";
+	return ""; // Возврат строки с UID игрока
 }
 
 void ASandboxCharacter::OnHit(class UPrimitiveComponent* HitComp, class AActor* Actor, class UPrimitiveComponent* Other, FVector Impulse, const FHitResult & HitResult) {
 	/*
-	float HitVelocity = GetCapsuleComponent()->GetComponentVelocity().Size();
-	if (VitalSystemComponent != nullptr) {
-		if (HitVelocity > VelocityHitThreshold) {
-			const double Timestamp = FPlatformTime::Seconds();
-			const double D = Timestamp - VelocityHitTimestamp;
-			if (D > 0.5) {
-				UE_LOG(LogTemp, Log, TEXT("HitVelocity -> %f"), HitVelocity);
-				VelocityHitTimestamp = Timestamp;
-				const float Damage = (HitVelocity - VelocityHitThreshold) * VelocityHitFactor;
-				VitalSystemComponent->Damage(Damage);
+	float HitVelocity = GetCapsuleComponent()->GetComponentVelocity().Size(); // Получение скорости удара
+	if (VitalSystemComponent != nullptr) { // Проверка на наличие компонента VitalSystem
+		if (HitVelocity > VelocityHitThreshold) { // Проверка на превышение порога скорости удара
+			const double Timestamp = FPlatformTime::Seconds(); // Получение текущего времени
+			const double D = Timestamp - VelocityHitTimestamp; // Вычисление времени с момента последнего удара
+			if (D > 0.5) { // Проверка времени
+				UE_LOG(LogTemp, Log, TEXT("HitVelocity -> %f"), HitVelocity); // Логирование скорости удара
+				VelocityHitTimestamp = Timestamp; // Обновление времени последнего удара
+				const float Damage = (HitVelocity - VelocityHitThreshold) * VelocityHitFactor; // Расчет урона
+				VitalSystemComponent->Damage(Damage); // Нанесение урона
 			}
 
 		}
 	}
 	*/
 }
-

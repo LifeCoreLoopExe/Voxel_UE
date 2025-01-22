@@ -1,471 +1,469 @@
+#include "SandboxLevelController.h" // Подключение заголовочного файла контроллера уровня песочницы
+#include "SandboxObject.h" // Подключение заголовочного файла объекта песочницы
+#include "ContainerComponent.h" // Подключение заголовочного файла компонента контейнера
 
+#include <string> // Подключение библиотеки строк
+#include <vector> // Подключение библиотеки векторов
+#include <random> // Подключение библиотеки генерации случайных чисел
 
-#include "SandboxLevelController.h"
-#include "SandboxObject.h"
-#include "ContainerComponent.h"
+TMap<int32, TSubclassOf<ASandboxObject>> ASandboxLevelController::ObjectMapById; // Карта объектов по ID
+ASandboxLevelController* ASandboxLevelController::StaticSelf; // Статическая ссылка на экземпляр контроллера уровня
 
-#include <string>
-#include <vector>
-#include <random>
-
-TMap<int32, TSubclassOf<ASandboxObject>> ASandboxLevelController::ObjectMapById;
-ASandboxLevelController* ASandboxLevelController::StaticSelf;
-
-ASandboxLevelController::ASandboxLevelController() {
-	MapName = TEXT("World 0");
+ASandboxLevelController::ASandboxLevelController() { // Конструктор контроллера уровня
+	MapName = TEXT("World 0"); // Инициализация имени карты
 }
 
-void ASandboxLevelController::BeginPlay() {
-	Super::BeginPlay();
-	GlobalObjectMap.Empty();
-	PrepareMetaData();
+void ASandboxLevelController::BeginPlay() { // Метод, вызываемый при начале игры
+	Super::BeginPlay(); // Вызов метода базового класса
+	GlobalObjectMap.Empty(); // Очистка глобальной карты объектов
+	PrepareMetaData(); // Подготовка метаданных
 
-	if (!StaticSelf) {
-		// TODO warning
+	if (!StaticSelf) { 
+		// TODO предупреждение
 	}
 
-	StaticSelf = this;
+	StaticSelf = this; // Установка статической ссылки на текущий экземпляр
 }
 
-void ASandboxLevelController::EndPlay(const EEndPlayReason::Type EndPlayReason) {
-	Super::EndPlay(EndPlayReason);
-	StaticSelf = nullptr;
+void ASandboxLevelController::EndPlay(const EEndPlayReason::Type EndPlayReason) { // Метод, вызываемый при окончании игры
+	Super::EndPlay(EndPlayReason); // Вызов метода базового класса
+	StaticSelf = nullptr; // Обнуление статической ссылки
 }
 
-void ASandboxLevelController::Tick(float DeltaTime) {
-	Super::Tick(DeltaTime);
+void ASandboxLevelController::Tick(float DeltaTime) { // Метод, вызываемый каждый кадр
+	Super::Tick(DeltaTime); // Вызов метода базового класса
 }
 
-void ASandboxLevelController::SaveObject(TSharedRef <TJsonWriter<TCHAR>> JsonWriter, const FSandboxObjectDescriptor& ObjDesc) {
-	JsonWriter->WriteObjectStart();
-	JsonWriter->WriteObjectStart("Object");
+void ASandboxLevelController::SaveObject(TSharedRef <TJsonWriter<TCHAR>> JsonWriter, const FSandboxObjectDescriptor& ObjDesc) { // Метод для сохранения объекта в JSON
+	JsonWriter->WriteObjectStart(); // Начало записи объекта
+	JsonWriter->WriteObjectStart("Object"); // Начало записи объекта "Object"
 
-	//JsonWriter->WriteValue("Name", SandboxObjectName);
-	//JsonWriter->WriteValue("Class", Name);
-	JsonWriter->WriteValue("ClassId", ObjDesc.ClassId);
-	JsonWriter->WriteValue("TypeId", ObjDesc.TypeId);
-	JsonWriter->WriteValue("NetUid", ObjDesc.NetUid);
+	//JsonWriter->WriteValue("Name", SandboxObjectName); // Запись имени объекта (закомментировано)
+	//JsonWriter->WriteValue("Class", Name); // Запись класса объекта (закомментировано)
+	JsonWriter->WriteValue("ClassId", ObjDesc.ClassId); // Запись ID класса
+	JsonWriter->WriteValue("TypeId", ObjDesc.TypeId); // Запись ID типа
+	JsonWriter->WriteValue("NetUid", ObjDesc.NetUid); // Запись сетевого UID
 
-	JsonWriter->WriteArrayStart("Location");
-	JsonWriter->WriteValue(ObjDesc.Transform.GetLocation().X);
-	JsonWriter->WriteValue(ObjDesc.Transform.GetLocation().Y);
-	JsonWriter->WriteValue(ObjDesc.Transform.GetLocation().Z);
-	JsonWriter->WriteArrayEnd();
+	JsonWriter->WriteArrayStart("Location"); // Начало записи массива "Location"
+	JsonWriter->WriteValue(ObjDesc.Transform.GetLocation().X); // Запись координаты X
+	JsonWriter->WriteValue(ObjDesc.Transform.GetLocation().Y); // Запись координаты Y
+	JsonWriter->WriteValue(ObjDesc.Transform.GetLocation().Z); // Запись координаты Z
+	JsonWriter->WriteArrayEnd(); // Конец записи массива
 
-	JsonWriter->WriteArrayStart("Rotation");
-	JsonWriter->WriteValue(ObjDesc.Transform.GetRotation().Rotator().Pitch);
-	JsonWriter->WriteValue(ObjDesc.Transform.GetRotation().Rotator().Yaw);
-	JsonWriter->WriteValue(ObjDesc.Transform.GetRotation().Rotator().Roll);
-	JsonWriter->WriteArrayEnd();
+	JsonWriter->WriteArrayStart("Rotation"); // Начало записи массива "Rotation"
+	JsonWriter->WriteValue(ObjDesc.Transform.GetRotation().Rotator().Pitch); // Запись угла поворота Pitch
+	JsonWriter->WriteValue(ObjDesc.Transform.GetRotation().Rotator().Yaw); // Запись угла поворота Yaw
+	JsonWriter->WriteValue(ObjDesc.Transform.GetRotation().Rotator().Roll); // Запись угла поворота Roll
+	JsonWriter->WriteArrayEnd(); // Конец записи массива
 
-	JsonWriter->WriteArrayStart("Scale");
-	JsonWriter->WriteValue(ObjDesc.Transform.GetScale3D().X);
-	JsonWriter->WriteValue(ObjDesc.Transform.GetScale3D().Y);
-	JsonWriter->WriteValue(ObjDesc.Transform.GetScale3D().Z);
-	JsonWriter->WriteArrayEnd();
+	JsonWriter->WriteArrayStart("Scale"); // Начало записи массива "Scale"
+	JsonWriter->WriteValue(ObjDesc.Transform.GetScale3D().X); // Запись масштаба по X
+	JsonWriter->WriteValue(ObjDesc.Transform.GetScale3D().Y); // Запись масштаба по Y
+	JsonWriter->WriteValue(ObjDesc.Transform.GetScale3D().Z); // Запись масштаба по Z
+	JsonWriter->WriteArrayEnd(); // Конец записи массива
 
-	if (ObjDesc.Container.Num() > 0) {
-		JsonWriter->WriteArrayStart("Containers");
+	if (ObjDesc.Container.Num() > 0) { // Проверка наличия контейнеров
+		JsonWriter->WriteArrayStart("Containers"); // Начало записи массива "Containers"
 
-		JsonWriter->WriteObjectStart();
-		JsonWriter->WriteObjectStart("Container");
+		JsonWriter->WriteObjectStart(); // Начало записи объекта
+		JsonWriter->WriteObjectStart("Container"); // Начало записи объекта "Container"
 
-		FString Name = GetName();
-		JsonWriter->WriteValue("Name", TEXT("Container"));
+		FString Name = GetName(); // Получение имени
+		JsonWriter->WriteValue("Name", TEXT("Container")); // Запись имени контейнера
 
-		JsonWriter->WriteArrayStart("Content");
+		JsonWriter->WriteArrayStart("Content"); // Начало записи массива "Content"
 
-		for (const auto& TmpStack : ObjDesc.Container) {
-			if (TmpStack.Stack.Amount > 0) {
-				JsonWriter->WriteObjectStart();
+		for (const auto& TmpStack : ObjDesc.Container) { // Проход по контейнерам
+			if (TmpStack.Stack.Amount > 0) { // Проверка на наличие объектов в стеке
+				JsonWriter->WriteObjectStart(); // Начало записи объекта
 
-				const ASandboxObject* SandboxObject = Cast<ASandboxObject>(TmpStack.Stack.GetObject());
-				FString ClassName = SandboxObject->GetClass()->GetName();
-				JsonWriter->WriteValue("SlotId", TmpStack.SlotId);
-				JsonWriter->WriteValue("Class", ClassName);
-				JsonWriter->WriteValue("ClassId", (int64)SandboxObject->GetSandboxClassId());
-				JsonWriter->WriteValue("TypeId", SandboxObject->GetSandboxTypeId());
-				JsonWriter->WriteValue("Amount", TmpStack.Stack.Amount);
+				const ASandboxObject* SandboxObject = Cast<ASandboxObject>(TmpStack.Stack.GetObject()); // Приведение типа к объекту песочницы
+				FString ClassName = SandboxObject->GetClass()->GetName(); // Получение имени класса
+				JsonWriter->WriteValue("SlotId", TmpStack.SlotId); // Запись ID слота
+				JsonWriter->WriteValue("Class", ClassName); // Запись имени класса
+				JsonWriter->WriteValue("ClassId", (int64)SandboxObject->GetSandboxClassId()); // Запись ID класса
+				JsonWriter->WriteValue("TypeId", SandboxObject->GetSandboxTypeId()); // Запись ID типа
+				JsonWriter->WriteValue("Amount", TmpStack.Stack.Amount); // Запись количества объектов
 
-				JsonWriter->WriteObjectEnd();
+				JsonWriter->WriteObjectEnd(); // Конец записи объекта
 			}
 		}
-		JsonWriter->WriteArrayEnd();
+		JsonWriter->WriteArrayEnd(); // Конец записи массива
 
-		JsonWriter->WriteObjectEnd();
-		JsonWriter->WriteObjectEnd();
+		JsonWriter->WriteObjectEnd(); // Конец записи объекта
+		JsonWriter->WriteObjectEnd(); // Конец записи объекта
 
-		JsonWriter->WriteArrayEnd();
+		JsonWriter->WriteArrayEnd(); // Конец записи массива
 	}
 
-	if (ObjDesc.PropertyMap.Num() > 0) {
-		JsonWriter->WriteObjectStart("Properties");
-		for (auto& Itm : ObjDesc.PropertyMap) {
-			JsonWriter->WriteValue(Itm.Key, Itm.Value);
+	if (ObjDesc.PropertyMap.Num() > 0) { // Проверка наличия свойств
+		JsonWriter->WriteObjectStart("Properties"); // Начало записи объекта "Properties"
+		for (auto& Itm : ObjDesc.PropertyMap) { // Проход по свойствам
+			JsonWriter->WriteValue(Itm.Key, Itm.Value); // Запись каждого свойства
 		}
-		JsonWriter->WriteObjectEnd();
+		JsonWriter->WriteObjectEnd(); // Конец записи объекта
 	}
 
-	JsonWriter->WriteObjectEnd();
-	JsonWriter->WriteObjectEnd();
+	JsonWriter->WriteObjectEnd(); // Конец записи объекта
+	JsonWriter->WriteObjectEnd(); // Конец записи объекта
 }
 
-void ASandboxLevelController::SavePreparedObjects(const TArray<FSandboxObjectDescriptor>& ObjDescList) {
-	UE_LOG(LogTemp, Log, TEXT("----------- save level json -----------"));
+void ASandboxLevelController::SavePreparedObjects(const TArray<FSandboxObjectDescriptor>& ObjDescList) { // Метод для сохранения подготовленных объектов
+	UE_LOG(LogTemp, Log, TEXT("----------- save level json -----------")); // Логирование начала сохранения уровня
 
-	FString JsonStr;
-	FString FileName = TEXT("level.json");
-	FString SavePath = FPaths::ProjectSavedDir();
-	FString FullPath = SavePath + TEXT("/Map/") + MapName + TEXT("/") + FileName;
+	FString JsonStr; // Строка для хранения JSON
+	FString FileName = TEXT("level.json"); // Имя файла для сохранения
+	FString SavePath = FPaths::ProjectSavedDir(); // Путь для сохранения в проекте
+	FString FullPath = SavePath + TEXT("/Map/") + MapName + TEXT("/") + FileName; // Полный путь к файлу
 
-	UE_LOG(LogTemp, Log, TEXT("level json path -> %s"), *FullPath);
+	UE_LOG(LogTemp, Log, TEXT("level json path -> %s"), *FullPath); // Логирование полного пути
 
-	TSharedRef <TJsonWriter<TCHAR>> JsonWriter = TJsonWriterFactory<>::Create(&JsonStr);
+	TSharedRef <TJsonWriter<TCHAR>> JsonWriter = TJsonWriterFactory<>::Create(&JsonStr); // Создание JSON писателя
 
-	JsonWriter->WriteObjectStart();
+	JsonWriter->WriteObjectStart(); // Начало записи объекта
 
-	SaveLevelJsonExt(JsonWriter);
+	SaveLevelJsonExt(JsonWriter); // Сохранение расширенных данных уровня
 
-	JsonWriter->WriteArrayStart("SandboxObjectList");
+	JsonWriter->WriteArrayStart("SandboxObjectList"); // Начало записи массива объектов песочницы
 
-	for (const auto& ObjDesc : ObjDescList) {
-		SaveObject(JsonWriter, ObjDesc);
+	for (const auto& ObjDesc : ObjDescList) { // Проход по списку объектов
+		SaveObject(JsonWriter, ObjDesc); // Сохранение каждого объекта
 	}
 
-	JsonWriter->WriteArrayEnd();
+	JsonWriter->WriteArrayEnd(); // Конец записи массива
 
-	JsonWriter->WriteObjectEnd();
-	JsonWriter->Close();
+	JsonWriter->WriteObjectEnd(); // Конец записи объекта
+	JsonWriter->Close(); // Закрытие писателя
 
-	FFileHelper::SaveStringToFile(*JsonStr, *FullPath);
+	FFileHelper::SaveStringToFile(*JsonStr, *FullPath); // Сохранение строки JSON в файл
 }
 
-FSandboxObjectDescriptor FSandboxObjectDescriptor::MakeObjDescriptor(ASandboxObject* SandboxObject) {
-	FSandboxObjectDescriptor ObjDesc;
-	ObjDesc.ClassId = SandboxObject->GetSandboxClassId();
-	ObjDesc.TypeId = SandboxObject->GetSandboxTypeId();
-	ObjDesc.Transform = SandboxObject->GetTransform();
-	ObjDesc.PropertyMap = SandboxObject->PropertyMap;
-	ObjDesc.NetUid = SandboxObject->GetSandboxNetUid();
+FSandboxObjectDescriptor FSandboxObjectDescriptor::MakeObjDescriptor(ASandboxObject* SandboxObject) { // Метод для создания дескриптора объекта
+	FSandboxObjectDescriptor ObjDesc; // Создание дескриптора объекта
+	ObjDesc.ClassId = SandboxObject->GetSandboxClassId(); // Получение ID класса
+	ObjDesc.TypeId = SandboxObject->GetSandboxTypeId(); // Получение ID типа
+	ObjDesc.Transform = SandboxObject->GetTransform(); // Получение трансформации объекта
+	ObjDesc.PropertyMap = SandboxObject->PropertyMap; // Получение карты свойств
+	ObjDesc.NetUid = SandboxObject->GetSandboxNetUid(); // Получение сетевого UID
 
-	UContainerComponent* Container = SandboxObject->GetContainer(TEXT("ObjectContainer"));
-	if (Container) {
-		TArray<FContainerStack> Content = Container->Content;
-		int SlotId = 0;
-		for (const auto& Stack : Content) {
-			if (Stack.Amount > 0) {
-				if (Stack.GetObject()) {
-					FTempContainerStack TempContainerStack;
-					TempContainerStack.Stack = Stack;
-					TempContainerStack.SlotId = SlotId;
-					ObjDesc.Container.Add(TempContainerStack);
+	UContainerComponent* Container = SandboxObject->GetContainer(TEXT("ObjectContainer")); // Получение компонента контейнера
+	if (Container) { // Проверка наличия контейнера
+		TArray<FContainerStack> Content = Container->Content; // Получение содержимого контейнера
+		int SlotId = 0; // Инициализация ID слота
+		for (const auto& Stack : Content) { // Проход по содержимому
+			if (Stack.Amount > 0) { // Проверка наличия объектов в стеке
+				if (Stack.GetObject()) { // Проверка наличия объекта
+					FTempContainerStack TempContainerStack; // Создание временного стека контейнера
+					TempContainerStack.Stack = Stack; // Установка стека
+					TempContainerStack.SlotId = SlotId; // Установка ID слота
+					ObjDesc.Container.Add(TempContainerStack); // Добавление в дескриптор
 				}
 			}
 
-			SlotId++;
+			SlotId++; // Увеличение ID слота
 		}
 	}
 
-	return ObjDesc;
+	return ObjDesc; // Возврат дескриптора объекта
 }
 
-void ASandboxLevelController::PrepareObjectForSave(TArray<FSandboxObjectDescriptor>& ObjDescList) {
-	for (TActorIterator<ASandboxObject> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
-		ASandboxObject* SandboxObject = Cast<ASandboxObject>(*ActorItr);
-		if (SandboxObject) {
-			if (SandboxObject->GetParentActor()) {
-				continue;
+void ASandboxLevelController::PrepareObjectForSave(TArray<FSandboxObjectDescriptor>& ObjDescList) { // Метод для подготовки объектов к сохранению
+	for (TActorIterator<ASandboxObject> ActorItr(GetWorld()); ActorItr; ++ActorItr) { // Итерация по всем объектам песочницы
+		ASandboxObject* SandboxObject = Cast<ASandboxObject>(*ActorItr); // Приведение типа к объекту песочницы
+		if (SandboxObject) { // Проверка на наличие объекта
+			if (SandboxObject->GetParentActor()) { // Проверка на наличие родительского актора
+				continue; // Пропуск итерации
 			}
 
-			FSandboxObjectDescriptor ObjDesc = FSandboxObjectDescriptor::MakeObjDescriptor(SandboxObject);
-			ObjDescList.Add(ObjDesc);
+			FSandboxObjectDescriptor ObjDesc = FSandboxObjectDescriptor::MakeObjDescriptor(SandboxObject); // Создание дескриптора объекта
+			ObjDescList.Add(ObjDesc); // Добавление дескриптора в список
 		}
 	}
 }
 
-void ASandboxLevelController::SaveLevelJson() {
-	TArray<FSandboxObjectDescriptor> ObjDescList;
-	PrepareObjectForSave(ObjDescList);
-	SavePreparedObjects(ObjDescList);
+void ASandboxLevelController::SaveLevelJson() { // Метод для сохранения уровня в JSON
+	TArray<FSandboxObjectDescriptor> ObjDescList; // Список дескрипторов объектов
+	PrepareObjectForSave(ObjDescList); // Подготовка объектов к сохранению
+	SavePreparedObjects(ObjDescList); // Сохранение подготовленных объектов
 }
 
-void ASandboxLevelController::SaveLevelJsonExt(TSharedRef <TJsonWriter<TCHAR>> JsonWriter) {
+void ASandboxLevelController::SaveLevelJsonExt(TSharedRef <TJsonWriter<TCHAR>> JsonWriter) { // Метод для сохранения расширенных данных уровня
 
 }
 
-void ASandboxLevelController::PrepareMetaData() {
-	if (bIsMetaDataReady) {
-		return;
+void ASandboxLevelController::PrepareMetaData() { // Метод для подготовки метаданных
+	if (bIsMetaDataReady) { // Проверка на готовность метаданных
+		return; // Выход из метода
 	}
 
-	if (!ObjectMap) {
-		UE_LOG(LogTemp, Error, TEXT("ASandboxLevelController::LoadLevelJson() -----  ObjectMap == NULL"));
-		return;
+	if (!ObjectMap) { // Проверка на наличие карты объектов
+		UE_LOG(LogTemp, Error, TEXT("ASandboxLevelController::LoadLevelJson() -----  ObjectMap == NULL")); // Логирование ошибки
+		return; // Выход из метода
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("----------- load object map -----------"));
+	UE_LOG(LogTemp, Log, TEXT("----------- load object map -----------")); // Логирование начала загрузки карты объектов
 
-	ObjectMapByClassName.Empty();
-	ObjectMapById.Empty();
+	ObjectMapByClassName.Empty(); // Очистка карты объектов по имени класса
+	ObjectMapById.Empty(); // Очистка карты объектов по ID
 
-	TArray<TSubclassOf<ASandboxObject>> ObjectListCopy = ObjectMap->ObjectList;
-	ObjectListCopy.Sort([](const TSubclassOf<ASandboxObject>& ip1, const TSubclassOf<ASandboxObject>& ip2) {
-		ASandboxObject* SandboxObject1 = Cast<ASandboxObject>(ip1->ClassDefaultObject);
-		ASandboxObject* SandboxObject2 = Cast<ASandboxObject>(ip2->ClassDefaultObject);
-		uint64 ClassId1 = SandboxObject1->GetSandboxClassId();
-		uint64 ClassId2 = SandboxObject2->GetSandboxClassId();
-		return  ClassId1 < ClassId2;
+	TArray<TSubclassOf<ASandboxObject>> ObjectListCopy = ObjectMap->ObjectList; // Копирование списка объектов
+	ObjectListCopy.Sort([](const TSubclassOf<ASandboxObject>& ip1, const TSubclassOf<ASandboxObject>& ip2) { // Сортировка списка объектов
+		ASandboxObject* SandboxObject1 = Cast<ASandboxObject>(ip1->ClassDefaultObject); // Приведение типа к объекту песочницы
+		ASandboxObject* SandboxObject2 = Cast<ASandboxObject>(ip2->ClassDefaultObject); // Приведение типа к объекту песочницы
+		uint64 ClassId1 = SandboxObject1->GetSandboxClassId(); // Получение ID класса первого объекта
+		uint64 ClassId2 = SandboxObject2->GetSandboxClassId(); // Получение ID класса второго объекта
+		return  ClassId1 < ClassId2; // Сравнение ID классов
 	});
 
-	for (const TSubclassOf<ASandboxObject>& SandboxObjectSubclass : ObjectListCopy) {
-		//TSubclassOf<ASandboxObject> SandboxObjectSubclass = Elem.Value;
-		ASandboxObject* SandboxObject = Cast<ASandboxObject>(SandboxObjectSubclass->ClassDefaultObject);
-		uint64 ClassId = SandboxObject->GetSandboxClassId();
-		FString ClassName = SandboxObjectSubclass->ClassDefaultObject->GetClass()->GetName();
+	for (const TSubclassOf<ASandboxObject>& SandboxObjectSubclass : ObjectListCopy) { // Проход по отсортированному списку объектов
+		//TSubclassOf<ASandboxObject> SandboxObjectSubclass = Elem.Value; // Закомментированная строка
+		ASandboxObject* SandboxObject = Cast<ASandboxObject>(SandboxObjectSubclass->ClassDefaultObject); // Приведение типа к объекту песочницы
+		uint64 ClassId = SandboxObject->GetSandboxClassId(); // Получение ID класса
+		FString ClassName = SandboxObjectSubclass->ClassDefaultObject->GetClass()->GetName(); // Получение имени класса
 
-		if (ClassId == 0) {
-			UE_LOG(LogTemp, Error, TEXT("ClassName -> %s has no class id"), *ClassName);
-			continue;
+		if (ClassId == 0) { // Проверка на наличие ID класса
+			UE_LOG(LogTemp, Error, TEXT("ClassName -> %s has no class id"), *ClassName); // Логирование ошибки
+			continue; // Пропуск итерации
 		}
 
-		UE_LOG(LogTemp, Log, TEXT("%s -> %d"), *ClassName, ClassId);
-		ObjectMapByClassName.Add(ClassName, SandboxObjectSubclass);
-		ObjectMapById.Add(ClassId, SandboxObjectSubclass);
+		UE_LOG(LogTemp, Log, TEXT("%s -> %d"), *ClassName, ClassId); // Логирование имени класса и ID
+		ObjectMapByClassName.Add(ClassName, SandboxObjectSubclass); // Добавление в карту объектов по имени класса
+		ObjectMapById.Add(ClassId, SandboxObjectSubclass); // Добавление в карту объектов по ID
 	}
 
-	bIsMetaDataReady = true;
+	bIsMetaDataReady = true; // Установка флага готовности метаданных
 }
 
-void ASandboxLevelController::LoadLevelJson() {
-	if (!ObjectMap) {
-		return;
+void ASandboxLevelController::LoadLevelJson() { // Метод для загрузки уровня из JSON
+	if (!ObjectMap) { // Проверка на наличие карты объектов
+		return; // Выход из метода
 	}
 
-	PrepareMetaData();
+	PrepareMetaData(); // Подготовка метаданных
 
-	UE_LOG(LogTemp, Log, TEXT("----------- load level json -----------"));
+	UE_LOG(LogTemp, Log, TEXT("----------- load level json -----------")); // Логирование начала загрузки уровня
 
-	FString FileName = TEXT("level.json");
-	FString SavePath = FPaths::ProjectSavedDir();
-	FString FullPath = SavePath + TEXT("/Map/") + MapName + TEXT("/") + FileName;
+	FString FileName = TEXT("level.json"); // Имя файла для загрузки
+	FString SavePath = FPaths::ProjectSavedDir(); // Путь для загрузки из проекта
+	FString FullPath = SavePath + TEXT("/Map/") + MapName + TEXT("/") + FileName; // Полный путь к файлу
 
-	FString JsonRaw;
-	if (!FFileHelper::LoadFileToString(JsonRaw, *FullPath)) {
-		UE_LOG(LogTemp, Error, TEXT("Error loading json file"));
+	FString JsonRaw; // Строка для хранения сырых данных JSON
+	if (!FFileHelper::LoadFileToString(JsonRaw, *FullPath)) { // Загрузка файла в строку
+		UE_LOG(LogTemp, Error, TEXT("Error loading json file")); // Логирование ошибки
 	}
 
-	TArray<FSandboxObjectDescriptor> ObjDescList;
+	TArray<FSandboxObjectDescriptor> ObjDescList; // Список дескрипторов объектов
 
-	TSharedPtr<FJsonObject> JsonParsed;
-	TSharedRef<TJsonReader<>> JsonReader = TJsonReaderFactory<>::Create(JsonRaw);
-	if (FJsonSerializer::Deserialize(JsonReader, JsonParsed)) {
-		TArray <TSharedPtr<FJsonValue>> SandboxObjectList = JsonParsed->GetArrayField("SandboxObjectList");
-		for (int Idx = 0; Idx < SandboxObjectList.Num(); Idx++) {
-			TSharedPtr<FJsonObject> ObjPtr = SandboxObjectList[Idx]->AsObject();
-			TSharedPtr<FJsonObject> SandboxObjectPtr = ObjPtr->GetObjectField(TEXT("Object"));
+	TSharedPtr<FJsonObject> JsonParsed; // Указатель на разобранный JSON объект
+	TSharedRef<TJsonReader<>> JsonReader = TJsonReaderFactory<>::Create(JsonRaw); // Создание читателя JSON
+	if (FJsonSerializer::Deserialize(JsonReader, JsonParsed)) { // Десериализация JSON
+		TArray <TSharedPtr<FJsonValue>> SandboxObjectList = JsonParsed->GetArrayField("SandboxObjectList"); // Получение массива объектов песочницы
+		for (int Idx = 0; Idx < SandboxObjectList.Num(); Idx++) { // Проход по массиву объектов
+			TSharedPtr<FJsonObject> ObjPtr = SandboxObjectList[Idx]->AsObject(); // Приведение значения к JSON объекту
+			TSharedPtr<FJsonObject> SandboxObjectPtr = ObjPtr->GetObjectField(TEXT("Object")); // Получение объекта "Object"
 
-			FSandboxObjectDescriptor ObjDesc;
+			FSandboxObjectDescriptor ObjDesc; // Создание дескриптора объекта
 
-			ObjDesc.ClassId = SandboxObjectPtr->GetIntegerField(TEXT("ClassId"));
-			ObjDesc.TypeId = SandboxObjectPtr->GetIntegerField(TEXT("TypeId"));
-			ObjDesc.NetUid = SandboxObjectPtr->GetStringField(TEXT("NetUid"));
+			ObjDesc.ClassId = SandboxObjectPtr->GetIntegerField(TEXT("ClassId")); // Получение ID класса
+			ObjDesc.TypeId = SandboxObjectPtr->GetIntegerField(TEXT("TypeId")); // Получение ID типа
+			ObjDesc.NetUid = SandboxObjectPtr->GetStringField(TEXT("NetUid")); // Получение сетевого UID
 
-			FVector Location;
-			TArray <TSharedPtr<FJsonValue>> LocationValArray = SandboxObjectPtr->GetArrayField("Location");
-			Location.X = LocationValArray[0]->AsNumber();
-			Location.Y = LocationValArray[1]->AsNumber();
-			Location.Z = LocationValArray[2]->AsNumber();
+			FVector Location; // Вектор для хранения местоположения
+			TArray <TSharedPtr<FJsonValue>> LocationValArray = SandboxObjectPtr->GetArrayField("Location"); // Получение массива местоположений
+			Location.X = LocationValArray[0]->AsNumber(); // Запись координаты X
+			Location.Y = LocationValArray[1]->AsNumber(); // Запись координаты Y
+			Location.Z = LocationValArray[2]->AsNumber(); // Запись координаты Z
 
-			FRotator Rotation;
-			TArray <TSharedPtr<FJsonValue>>  RotationValArray = SandboxObjectPtr->GetArrayField("Rotation");
-			Rotation.Pitch = RotationValArray[0]->AsNumber();
-			Rotation.Yaw = RotationValArray[1]->AsNumber();
-			Rotation.Roll = RotationValArray[2]->AsNumber();
+			FRotator Rotation; // Ротор для хранения углов поворота
+			TArray <TSharedPtr<FJsonValue>>  RotationValArray = SandboxObjectPtr->GetArrayField("Rotation"); // Получение массива углов поворота
+			Rotation.Pitch = RotationValArray[0]->AsNumber(); // Запись угла поворота Pitch
+			Rotation.Yaw = RotationValArray[1]->AsNumber(); // Запись угла поворота Yaw
+			Rotation.Roll = RotationValArray[2]->AsNumber(); // Запись угла поворота Roll
 
-			FVector Scale;
-			TArray <TSharedPtr<FJsonValue>> ScaleValArray = SandboxObjectPtr->GetArrayField("Scale");
-			Scale.X = ScaleValArray[0]->AsNumber();
-			Scale.Y = ScaleValArray[1]->AsNumber();
-			Scale.Z = ScaleValArray[2]->AsNumber();
+			FVector Scale; // Вектор для хранения масштаба
+			TArray <TSharedPtr<FJsonValue>> ScaleValArray = SandboxObjectPtr->GetArrayField("Scale"); // Получение массива масштаба
+			Scale.X = ScaleValArray[0]->AsNumber(); // Запись масштаба по X
+			Scale.Y = ScaleValArray[1]->AsNumber(); // Запись масштаба по Y
+			Scale.Z = ScaleValArray[2]->AsNumber(); // Запись масштаба по Z
 
-			ObjDesc.Transform = FTransform(Rotation, Location, Scale);
+			ObjDesc.Transform = FTransform(Rotation, Location, Scale); // Установка трансформации объекта
 
-			const TSharedPtr<FJsonObject>* ObjPropJson = nullptr;
-			bool bHasProperties = SandboxObjectPtr->TryGetObjectField("Properties", ObjPropJson);
-			if (bHasProperties) {
-				for (auto& Itm : (*ObjPropJson)->Values) {
-					FString Key = Itm.Key;
-					FString Value = Itm.Value->AsString();
-					ObjDesc.PropertyMap.Add(Key, Value);
+			const TSharedPtr<FJsonObject>* ObjPropJson = nullptr; // Указатель для свойств объекта
+			bool bHasProperties = SandboxObjectPtr->TryGetObjectField("Properties", ObjPropJson); // Проверка наличия свойств
+			if (bHasProperties) { // Если свойства существуют
+				for (auto& Itm : (*ObjPropJson)->Values) { // Проход по свойствам
+					FString Key = Itm.Key; // Получение ключа свойства
+					FString Value = Itm.Value->AsString(); // Получение значения свойства
+					ObjDesc.PropertyMap.Add(Key, Value); // Добавление свойства в дескриптор
 				}
 			}
 
-			const TArray<TSharedPtr<FJsonValue>>* ContainersJsonArray = nullptr;
-			bool bHasContainers = SandboxObjectPtr->TryGetArrayField("Containers", ContainersJsonArray);
-			if (bHasContainers) {
-				for (TSharedPtr<FJsonValue> ContainerJsonValue : *ContainersJsonArray) {
-					TSharedPtr<FJsonObject> ContainerJsonObject = ContainerJsonValue->AsObject()->GetObjectField(TEXT("Container"));
-					FString ContainerName = ContainerJsonObject->GetStringField("Name");
-					TArray<TSharedPtr<FJsonValue>> ContentArray = ContainerJsonObject->GetArrayField("Content");
-					//UE_LOG(LogTemp, Warning, TEXT("ContainerName %s"), *ContainerName);
+			const TArray<TSharedPtr<FJsonValue>>* ContainersJsonArray = nullptr; // Указатель для массива контейнеров
+			bool bHasContainers = SandboxObjectPtr->TryGetArrayField("Containers", ContainersJsonArray); // Проверка наличия контейнеров
+			if (bHasContainers) { // Если контейнеры существуют
+				for (TSharedPtr<FJsonValue> ContainerJsonValue : *ContainersJsonArray) { // Проход по массиву контейнеров
+					TSharedPtr<FJsonObject> ContainerJsonObject = ContainerJsonValue->AsObject()->GetObjectField(TEXT("Container")); // Получение контейнера
+					FString ContainerName = ContainerJsonObject->GetStringField("Name"); // Получение имени контейнера
+					TArray<TSharedPtr<FJsonValue>> ContentArray = ContainerJsonObject->GetArrayField("Content"); // Получение массива содержимого контейнера
+					//UE_LOG(LogTemp, Warning, TEXT("ContainerName %s"), *ContainerName); // Логирование имени контейнера (закомментировано)
 
-					for (TSharedPtr<FJsonValue> ContentJsonValue : ContentArray) {
-						int SlotId = ContentJsonValue->AsObject()->GetIntegerField("SlotId");
-						int ClassId = ContentJsonValue->AsObject()->GetIntegerField("ClassId");
-						int Amount = ContentJsonValue->AsObject()->GetIntegerField("Amount");
+					for (TSharedPtr<FJsonValue> ContentJsonValue : ContentArray) { // Проход по массиву содержимого
+						int SlotId = ContentJsonValue->AsObject()->GetIntegerField("SlotId"); // Получение ID слота
+						int ClassId = ContentJsonValue->AsObject()->GetIntegerField("ClassId"); // Получение ID класса
+						int Amount = ContentJsonValue->AsObject()->GetIntegerField("Amount"); // Получение количества
 
-						FContainerStack Stack;
-						Stack.Amount = Amount;
-						Stack.SandboxClassId = ClassId;
+						FContainerStack Stack; // Создание стека контейнера
+						Stack.Amount = Amount; // Установка количества
+						Stack.SandboxClassId = ClassId; // Установка ID класса
 
-						FTempContainerStack TempContainerStack;
-						TempContainerStack.Stack = Stack;
-						TempContainerStack.SlotId = SlotId;
+						FTempContainerStack TempContainerStack; // Создание временного стека контейнера
+						TempContainerStack.Stack = Stack; // Установка стека
+						TempContainerStack.SlotId = SlotId; // Установка ID слота
 
-						ObjDesc.Container.Add(TempContainerStack);
+						ObjDesc.Container.Add(TempContainerStack); // Добавление временного стека в дескриптор
 					}
 				}
 			}
-			ObjDescList.Add(ObjDesc);
+			ObjDescList.Add(ObjDesc); // Добавление дескриптора в список
 		}
 
-		LoadLevelJsonExt(JsonParsed);
+		LoadLevelJsonExt(JsonParsed); // Загрузка расширенных данных уровня
 	}
 
-	SpawnPreparedObjects(ObjDescList);
+	SpawnPreparedObjects(ObjDescList); // Спавн подготовленных объектов
 }
 
-ASandboxObject* ASandboxLevelController::SpawnPreparedObject(const FSandboxObjectDescriptor& ObjDesc) {
-	ASandboxObject* NewObject = SpawnSandboxObject(ObjDesc.ClassId, ObjDesc.Transform, ObjDesc.NetUid);
-	if (NewObject) {
-		NewObject->PropertyMap = ObjDesc.PropertyMap;
-		NewObject->PostLoadProperties();
+ASandboxObject* ASandboxLevelController::SpawnPreparedObject(const FSandboxObjectDescriptor& ObjDesc) { // Метод для спавна подготовленного объекта
+	ASandboxObject* NewObject = SpawnSandboxObject(ObjDesc.ClassId, ObjDesc.Transform, ObjDesc.NetUid); // Спавн нового объекта
+	if (NewObject) { // Проверка на успешный спавн
+		NewObject->PropertyMap = ObjDesc.PropertyMap; // Установка карты свойств
+		NewObject->PostLoadProperties(); // Вызов метода для загрузки свойств
 
-		UContainerComponent* Container = NewObject->GetContainer(TEXT("ObjectContainer"));
-		if (Container) {
-			for (const auto& Itm : ObjDesc.Container) {
-				Container->SetStackDirectly(Itm.Stack, Itm.SlotId);
+		UContainerComponent* Container = NewObject->GetContainer(TEXT("ObjectContainer")); // Получение компонента контейнера
+		if (Container) { // Проверка наличия контейнера
+			for (const auto& Itm : ObjDesc.Container) { // Проход по контейнерам
+				Container->SetStackDirectly(Itm.Stack, Itm.SlotId); // Установка стека контейнера
 			}
 		}
 	}
 
-	return NewObject;
+	return NewObject; // Возврат нового объекта
 }
 
-void ASandboxLevelController::SpawnPreparedObjects(const TArray<FSandboxObjectDescriptor>& ObjDescList) {
-	for (const auto& ObjDesc : ObjDescList) {
-		SpawnPreparedObject(ObjDesc);
+void ASandboxLevelController::SpawnPreparedObjects(const TArray<FSandboxObjectDescriptor>& ObjDescList) { // Метод для спавна подготовленных объектов
+	for (const auto& ObjDesc : ObjDescList) { // Проход по списку дескрипторов объектов
+		SpawnPreparedObject(ObjDesc); // Спавн каждого подготовленного объекта
 	}
 }
 
-FString ASandboxLevelController::GetNewUid() const {
+FString ASandboxLevelController::GetNewUid() const { // Метод для получения нового UID
 
-	std::random_device rd;
-	std::mt19937_64 gen(rd());
-	std::uniform_int_distribution<uint64_t> dis;
+	std::random_device rd; // Генератор случайных чисел
+	std::mt19937_64 gen(rd()); // Инициализация генератора
+	std::uniform_int_distribution<uint64_t> dis; // Распределение случайных чисел
 
-	FString UID;
+	FString UID; // Строка для хранения UID
 
 	do {
-		uint64 uid1 = dis(gen);
-		uint64 uid2 = dis(gen);
-		uint64 uid3 = dis(gen);
+		uint64 uid1 = dis(gen); // Генерация первого UID
+		uint64 uid2 = dis(gen); // Генерация второго UID
+		uint64 uid3 = dis(gen); // Генерация третьего UID
 
-		UID = FString::Printf(TEXT("%llx-%llx-%llx"), uid1, uid2, uid3);
+		UID = FString::Printf(TEXT("%llx-%llx-%llx"), uid1, uid2, uid3); // Форматирование строки UID
 
-	} while (GlobalObjectMap.Find(UID) != nullptr);
+	} while (GlobalObjectMap.Find(UID) != nullptr); // Проверка на уникальность UID
 
-	return UID;
+	return UID; // Возврат уникального UID
 }
 
-ASandboxObject* ASandboxLevelController::SpawnSandboxObject(const int ClassId, const FTransform& Transform, const FString& SandboxNetUid) {
-	if (GetNetMode() != NM_Client) {
-		TSubclassOf<ASandboxObject> SandboxObject = GetSandboxObjectByClassId(ClassId);
-		if (SandboxObject) {
-			UClass* SpawnClass = SandboxObject->ClassDefaultObject->GetClass();
-			ASandboxObject* NewObject = (ASandboxObject*)GetWorld()->SpawnActor(SpawnClass, &Transform);
-			if (NewObject) {
-				NewObject->SandboxNetUid = (SandboxNetUid == "") ? GetNewUid() : SandboxNetUid;
-				GlobalObjectMap.Add(NewObject->SandboxNetUid, NewObject);
+ASandboxObject* ASandboxLevelController::SpawnSandboxObject(const int ClassId, const FTransform& Transform, const FString& SandboxNetUid) { // Метод для спавна объекта песочницы
+	if (GetNetMode() != NM_Client) { // Проверка, что не в клиентском режиме
+		TSubclassOf<ASandboxObject> SandboxObject = GetSandboxObjectByClassId(ClassId); // Получение объекта по ID класса
+		if (SandboxObject) { // Проверка, что объект существует
+			UClass* SpawnClass = SandboxObject->ClassDefaultObject->GetClass(); // Получение класса по умолчанию
+			ASandboxObject* NewObject = (ASandboxObject*)GetWorld()->SpawnActor(SpawnClass, &Transform); // Спавн нового объекта
+			if (NewObject) { // Проверка на успешный спавн
+				NewObject->SandboxNetUid = (SandboxNetUid == "") ? GetNewUid() : SandboxNetUid; // Установка сетевого UID
+				GlobalObjectMap.Add(NewObject->SandboxNetUid, NewObject); // Добавление объекта в глобальную карту
 			}
-			return NewObject;
+			return NewObject; // Возврат нового объекта
 		}
 	}
 
-	return nullptr;
+	return nullptr; // Возврат nullptr, если объект не был создан
 }
 
-void ASandboxLevelController::LoadLevelJsonExt(TSharedPtr<FJsonObject> JsonParsed) {
+void ASandboxLevelController::LoadLevelJsonExt(TSharedPtr<FJsonObject> JsonParsed) { // Метод для загрузки расширенных данных уровня
 
 }
 
-TSubclassOf<ASandboxObject> ASandboxLevelController::GetSandboxObjectByClassId(int32 ClassId) {
-	if (!bIsMetaDataReady) {
-		PrepareMetaData();
+TSubclassOf<ASandboxObject> ASandboxLevelController::GetSandboxObjectByClassId(int32 ClassId) { // Метод для получения объекта песочницы по ID класса
+	if (!bIsMetaDataReady) { // Проверка на готовность метаданных
+		PrepareMetaData(); // Подготовка метаданных
 	}
 
-	if (ObjectMapById.Contains(ClassId)) {
-		return ObjectMapById[ClassId];
+	if (ObjectMapById.Contains(ClassId)) { // Проверка на наличие объекта в карте по ID
+		return ObjectMapById[ClassId]; // Возврат объекта
 	}
 
-	return nullptr;
+	return nullptr; // Возврат nullptr, если объект не найден
 }
 
-ASandboxObject* ASandboxLevelController::GetDefaultSandboxObject(uint64 ClassId) {
-	if (ObjectMapById.Contains(ClassId)) {
-		return (ASandboxObject*)(ObjectMapById[ClassId]->GetDefaultObject());
+ASandboxObject* ASandboxLevelController::GetDefaultSandboxObject(uint64 ClassId) { // Метод для получения объекта песочницы по умолчанию по ID класса
+	if (ObjectMapById.Contains(ClassId)) { // Проверка на наличие объекта в карте по ID
+		return (ASandboxObject*)(ObjectMapById[ClassId]->GetDefaultObject()); // Возврат объекта по умолчанию
 	}
 
-	return nullptr;
+	return nullptr; // Возврат nullptr, если объект не найден
 }
 
-ASandboxLevelController* ASandboxLevelController::GetInstance() {
-	return StaticSelf;
+ASandboxLevelController* ASandboxLevelController::GetInstance() { // Метод для получения экземпляра контроллера уровня
+	return StaticSelf; // Возврат статической ссылки на экземпляр
 }
 
-ASandboxObject* ASandboxLevelController::GetSandboxObject(uint64 ClassId) {
-	if (!bIsMetaDataReady) {
-		PrepareMetaData();
+ASandboxObject* ASandboxLevelController::GetSandboxObject(uint64 ClassId) { // Метод для получения объекта песочницы по ID класса
+	if (!bIsMetaDataReady) { // Проверка на готовность метаданных
+		PrepareMetaData(); // Подготовка метаданных
 	}
 
-	if (ObjectMapById.Contains(ClassId)) {
-		return (ASandboxObject*)(ObjectMapById[ClassId]->GetDefaultObject());
+	if (ObjectMapById.Contains(ClassId)) { // Проверка на наличие объекта в карте по ID
+		return (ASandboxObject*)(ObjectMapById[ClassId]->GetDefaultObject()); // Возврат объекта по умолчанию
 	}
 
-	return nullptr;
+	return nullptr; // Возврат nullptr, если объект не найден
 }
 
-bool ASandboxLevelController::RemoveSandboxObject(ASandboxObject* Obj) {
-	if (GetNetMode() != NM_Client) {
-		if (Obj) {
-			FString NetUid = Obj->GetSandboxNetUid();
-			Obj->Destroy();
-			GlobalObjectMap.Remove(NetUid);
-			return true;
+bool ASandboxLevelController::RemoveSandboxObject(ASandboxObject* Obj) { // Метод для удаления объекта песочницы
+	if (GetNetMode() != NM_Client) { // Проверка, что не в клиентском режиме
+		if (Obj) { // Проверка на наличие объекта
+			FString NetUid = Obj->GetSandboxNetUid(); // Получение сетевого UID
+			Obj->Destroy(); // Уничтожение объекта
+			GlobalObjectMap.Remove(NetUid); // Удаление объекта из глобальной карты
+			return true; // Возврат true, если объект был удален
 		}
 	}
 
-	return false;
+	return false; // Возврат false, если объект не был удален
 }
 
-ASandboxObject* ASandboxLevelController::GetObjectByNetUid(FString NetUid) {
-	if (GlobalObjectMap.Contains(NetUid)) {
-		return GlobalObjectMap[NetUid];
+ASandboxObject* ASandboxLevelController::GetObjectByNetUid(FString NetUid) { // Метод для получения объекта по сетевому UID
+	if (GlobalObjectMap.Contains(NetUid)) { // Проверка на наличие объекта в глобальной карте
+		return GlobalObjectMap[NetUid]; // Возврат объекта
 	}
 
-	return nullptr;
+	return nullptr; // Возврат nullptr, если объект не найден
 }
 
-ASandboxEffect* ASandboxLevelController::SpawnEffect(const int32 EffectId, const FTransform& Transform) {
-	if (GetNetMode() != NM_Client) {
-		if (ObjectMap->Effects.Contains(EffectId)) {
-			TSubclassOf<ASandboxEffect> Effect = ObjectMap->Effects[EffectId];
-			if (Effect) {
-				UClass* SpawnClass = Effect->ClassDefaultObject->GetClass();
-				return (ASandboxEffect*)GetWorld()->SpawnActor(SpawnClass, &Transform);
+ASandboxEffect* ASandboxLevelController::SpawnEffect(const int32 EffectId, const FTransform& Transform) { // Метод для спавна эффекта
+	if (GetNetMode() != NM_Client) { // Проверка, что не в клиентском режиме
+		if (ObjectMap->Effects.Contains(EffectId)) { // Проверка на наличие эффекта по ID
+			TSubclassOf<ASandboxEffect> Effect = ObjectMap->Effects[EffectId]; // Получение эффекта
+			if (Effect) { // Проверка, что эффект существует
+				UClass* SpawnClass = Effect->ClassDefaultObject->GetClass(); // Получение класса по умолчанию
+				return (ASandboxEffect*)GetWorld()->SpawnActor(SpawnClass, &Transform); // Спавн эффекта
 			}
 		}
 	}
 
-	return nullptr;
+	return nullptr; // Возврат nullptr, если эффект не был создан
 }

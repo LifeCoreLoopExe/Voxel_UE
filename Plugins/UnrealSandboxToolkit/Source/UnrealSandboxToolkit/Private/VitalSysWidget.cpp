@@ -1,55 +1,52 @@
 // Copyright blackw 2015-2020
 
-#include "VitalSysWidget.h"
-#include "VitalSystemComponent.h"
-#include "SandboxCharacter.h"
+#include "VitalSysWidget.h" // Подключаем заголовочный файл VitalSysWidget.h
+#include "VitalSystemComponent.h" // Подключаем заголовочный файл VitalSystemComponent.h
+#include "SandboxCharacter.h" // Подключаем заголовочный файл SandboxCharacter.h
 
-
-float USandboxVitalSysWidget::GetHealth() {
-	return 0;
+float USandboxVitalSysWidget::GetHealth() { // Определяем метод GetHealth, возвращающий здоровье
+	return 0; // Возвращаем 0, так как пока не реализовано
 }
 
-float USandboxVitalSysWidget::GetMaxHealth() {
-	return 0;
+float USandboxVitalSysWidget::GetMaxHealth() { // Определяем метод GetMaxHealth, возвращающий максимальное здоровье
+	return 0; // Возвращаем 0, так как пока не реализовано
 }
 
-UVitalSystemComponent* USandboxVitalSysWidget::GetVitalSystemComponent() {
-	if (GetOwningPlayer()->GetPawn()) {
-		TArray<UVitalSystemComponent*> Components;
-		GetOwningPlayer()->GetPawn()->GetComponents<UVitalSystemComponent>(Components);
-		for (UVitalSystemComponent* VitalSystemComponent : Components) {
-			return VitalSystemComponent;
+UVitalSystemComponent* USandboxVitalSysWidget::GetVitalSystemComponent() { // Определяем метод, возвращающий компонент VitalSystem
+	if (GetOwningPlayer()->GetPawn()) { // Проверяем, есть ли у игрока персонаж (Pawn)
+		TArray<UVitalSystemComponent*> Components; // Создаем массив для компонентов VitalSystem
+		GetOwningPlayer()->GetPawn()->GetComponents<UVitalSystemComponent>(Components); // Получаем все компоненты VitalSystem у персонажа
+		for (UVitalSystemComponent* VitalSystemComponent : Components) { // Проходим по всем найденным компонентам
+			return VitalSystemComponent; // Возвращаем первый найденный компонент
 		}
 	}
 
-	return nullptr;
+	return nullptr; // Если компонент не найден, возвращаем nullptr
 }
 
+float USandboxVitalSysWidget::GetHealthInPercent() { // Определяем метод, возвращающий здоровье в процентах
 
-float USandboxVitalSysWidget::GetHealthInPercent() {
-
-	UVitalSystemComponent* VitalSystemComponent = GetVitalSystemComponent();
-	if (VitalSystemComponent) {
-		const float Health = VitalSystemComponent->GetHealth();
-		const float MaxHealth = VitalSystemComponent->GetMaxHealth();
-		static const float AbsoluteMaxHealth = 1000.f;
-		const float Res = Health / AbsoluteMaxHealth;
-		return Res;
+	UVitalSystemComponent* VitalSystemComponent = GetVitalSystemComponent(); // Получаем компонент VitalSystem
+	if (VitalSystemComponent) { // Если компонент найден
+		const float Health = VitalSystemComponent->GetHealth(); // Получаем текущее здоровье
+		const float MaxHealth = VitalSystemComponent->GetMaxHealth(); // Получаем максимальное здоровье
+		static const float AbsoluteMaxHealth = 1000.f; // Определяем абсолютное максимальное здоровье
+		const float Res = Health / AbsoluteMaxHealth; // Вычисляем процент здоровья
+		return Res; // Возвращаем процент здоровья
 	}
 	
-
-	return 1.f;
+	return 1.f; // Если компонент не найден, возвращаем 1 (100%)
 }
 
-float USandboxVitalSysWidget::GetStaminaInPercent() {
+float USandboxVitalSysWidget::GetStaminaInPercent() { // Определяем метод, возвращающий выносливость в процентах
 	
-	UVitalSystemComponent* VitalSystemComponent = GetVitalSystemComponent();
-	if (VitalSystemComponent) {
-		const float Stamina = VitalSystemComponent->GetStamina();
-		static const float AbsoluteMaxStamina = 1000.f;
-		const float Res = Stamina / AbsoluteMaxStamina;
-		return Res;
+	UVitalSystemComponent* VitalSystemComponent = GetVitalSystemComponent(); // Получаем компонент VitalSystem
+	if (VitalSystemComponent) { // Если компонент найден
+		const float Stamina = VitalSystemComponent->GetStamina(); // Получаем текущую выносливость
+		static const float AbsoluteMaxStamina = 1000.f; // Определяем абсолютное максимальное значение выносливости
+		const float Res = Stamina / AbsoluteMaxStamina; // Вычисляем процент выносливости
+		return Res; // Возвращаем процент выносливости
 	}
 	
-	return 0.f;
+	return 0.f; // Если компонент не найден, возвращаем 0 (0%)
 }

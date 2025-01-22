@@ -1,4 +1,3 @@
-
 #include "SandboxPlayerController.h"
 #include "Blueprint/AIBlueprintHelperLibrary.h"
 #include "SandboxCharacter.h"
@@ -7,450 +6,451 @@
 #include "Blueprint/WidgetBlueprintLibrary.h"
 
 ASandboxPlayerController::ASandboxPlayerController() {
-	//bShowMouseCursor = true;
-	DefaultMouseCursor = EMouseCursor::Default;
-	CurrentInventorySlot = -1;
-	bIsGameInputBlocked = false;
+	// Конструктор класса ASandboxPlayerController
+	//bShowMouseCursor = true; // Показать курсор мыши
+	DefaultMouseCursor = EMouseCursor::Default; // Установить курсор по умолчанию
+	CurrentInventorySlot = -1; // Текущий слот инвентаря
+	bIsGameInputBlocked = false; // Блокировка игрового ввода
 }
 
 void ASandboxPlayerController::BeginPlay() {
-	Super::BeginPlay();
+	Super::BeginPlay(); // Вызов родительского метода BeginPlay
 
-	LevelController = nullptr;
-	for (TActorIterator<ASandboxLevelController> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
-		ASandboxLevelController* LevelCtrl = Cast<ASandboxLevelController>(*ActorItr);
-		if (LevelCtrl) {
-			UE_LOG(LogTemp, Log, TEXT("Found ALevelController -> %s"), *LevelCtrl->GetName());
-			LevelController = LevelCtrl;
-			break;
+	LevelController = nullptr; // Инициализация контроллера уровня
+	for (TActorIterator<ASandboxLevelController> ActorItr(GetWorld()); ActorItr; ++ActorItr) { // Итерация по всем актерам ASandboxLevelController в мире
+		ASandboxLevelController* LevelCtrl = Cast<ASandboxLevelController>(*ActorItr); // Приведение типа
+		if (LevelCtrl) { // Если контроллер уровня найден
+			UE_LOG(LogTemp, Log, TEXT("Found ALevelController -> %s"), *LevelCtrl->GetName()); // Логирование имени контроллера
+			LevelController = LevelCtrl; // Сохранение ссылки на контроллер уровня
+			break; // Выход из цикла
 		}
 	}
 }
 
 void ASandboxPlayerController::PlayerTick(float DeltaTime) {
-	Super::PlayerTick(DeltaTime);
+	Super::PlayerTick(DeltaTime); // Вызов родительского метода PlayerTick
 
-	if (bMoveToMouseCursor)	{
-		MoveToMouseCursor();
+	if (bMoveToMouseCursor) { // Если нужно двигаться к курсору мыши
+		MoveToMouseCursor(); // Вызов функции для движения к курсору
 	}
 }
 
 void ASandboxPlayerController::SetupInputComponent() {
-	// set up gameplay key bindings
-	Super::SetupInputComponent();
+	// Настройка привязок клавиш для игрового процесса
+	Super::SetupInputComponent(); // Вызов родительского метода SetupInputComponent
 
-	InputComponent->BindAction("MainAction", IE_Pressed, this, &ASandboxPlayerController::OnMainActionPressedInternal);
-	InputComponent->BindAction("MainAction", IE_Released, this, &ASandboxPlayerController::OnMainActionReleasedInternal);
+	InputComponent->BindAction("MainAction", IE_Pressed, this, &ASandboxPlayerController::OnMainActionPressedInternal); // Привязка основной действия на нажатие
+	InputComponent->BindAction("MainAction", IE_Released, this, &ASandboxPlayerController::OnMainActionReleasedInternal); // Привязка основной действия на отпускание
 
-	InputComponent->BindAction("AltAction", IE_Pressed, this, &ASandboxPlayerController::OnAltActionPressedInternal);
-	InputComponent->BindAction("AltAction", IE_Released, this, &ASandboxPlayerController::OnAltActionReleasedInternal);
+	InputComponent->BindAction("AltAction", IE_Pressed, this, &ASandboxPlayerController::OnAltActionPressedInternal); // Привязка альтернативного действия на нажатие
+	InputComponent->BindAction("AltAction", IE_Released, this, &ASandboxPlayerController::OnAltActionReleasedInternal); // Привязка альтернативного действия на отпускание
 
-	// support touch devices 
+	// Поддержка сенсорных устройств 
 	//InputComponent->BindTouch(EInputEvent::IE_Pressed, this, &AUE4VoxelTerrainPlayerController::MoveToTouchLocation);
 	//InputComponent->BindTouch(EInputEvent::IE_Repeat, this, &AUE4VoxelTerrainPlayerController::MoveToTouchLocation);
 
-	InputComponent->BindAction("ToggleView", IE_Pressed, this, &ASandboxPlayerController::ToggleView);
+	InputComponent->BindAction("ToggleView", IE_Pressed, this, &ASandboxPlayerController::ToggleView); // Привязка действия переключения вида
 }
 
 void ASandboxPlayerController::MoveToMouseCursor() {
-	FHitResult Hit;
-	GetHitResultUnderCursor(ECC_WorldStatic, false, Hit);
+	FHitResult Hit; // Результат попадания
+	GetHitResultUnderCursor(ECC_WorldStatic, false, Hit); // Получаем результат попадания под курсором
 
-	if (Hit.bBlockingHit) {
-		// We hit something, move there
-		SetNewMoveDestination(Hit.ImpactPoint);
+	if (Hit.bBlockingHit) { // Если произошло столкновение
+		// Мы попали во что-то, двигаемся туда
+		SetNewMoveDestination(Hit.ImpactPoint); // Устанавливаем новую цель движения
 	}
 }
 
 void ASandboxPlayerController::MoveToTouchLocation(const ETouchIndex::Type FingerIndex, const FVector Location) {
-	FVector2D ScreenSpaceLocation(Location);
+	FVector2D ScreenSpaceLocation(Location); // Переводим координаты в экранное пространство
 
-	FHitResult HitResult;
-	GetHitResultAtScreenPosition(ScreenSpaceLocation, CurrentClickTraceChannel, true, HitResult);
-	if (HitResult.bBlockingHit) {
-		SetNewMoveDestination(HitResult.ImpactPoint);
+	FHitResult HitResult; // Результат попадания
+	GetHitResultAtScreenPosition(ScreenSpaceLocation, CurrentClickTraceChannel, true, HitResult); // Получаем результат попадания по экранным координатам
+	if (HitResult.bBlockingHit) { // Если произошло столкновение
+		SetNewMoveDestination(HitResult.ImpactPoint); // Устанавливаем новую цель движения
 	}
 }
 
 void ASandboxPlayerController::SetNewMoveDestination(const FVector DestLocation) {
-	ASandboxCharacter* SandboxCharacter = Cast<ASandboxCharacter>(GetCharacter());
+	ASandboxCharacter* SandboxCharacter = Cast<ASandboxCharacter>(GetCharacter()); // Получаем персонажа
 
-	if (SandboxCharacter) {
-		float const Distance = FVector::Dist(DestLocation, SandboxCharacter->GetActorLocation());
-		if (Distance > 120.0f) {
-			UAIBlueprintHelperLibrary::SimpleMoveToLocation(this, DestLocation);
+	if (SandboxCharacter) { // Если персонаж валиден
+		float const Distance = FVector::Dist(DestLocation, SandboxCharacter->GetActorLocation()); // Вычисляем расстояние до цели
+		if (Distance > 120.0f) { // Если расстояние больше 120
+			UAIBlueprintHelperLibrary::SimpleMoveToLocation(this, DestLocation); // Двигаем персонажа к новой цели
 		}
 	}
 }
 
 void ASandboxPlayerController::SetDestinationPressed() {
-	ASandboxCharacter* SandboxCharacter = Cast<ASandboxCharacter>(GetCharacter());
-	if (!SandboxCharacter) {
-		return;
+	ASandboxCharacter* SandboxCharacter = Cast<ASandboxCharacter>(GetCharacter()); // Получаем персонажа
+	if (!SandboxCharacter) { // Если персонаж не найден
+		return; // Выходим
 	}
 
-	if (SandboxCharacter->GetSandboxPlayerView() != PlayerView::TOP_DOWN) {
-		return;
+	if (SandboxCharacter->GetSandboxPlayerView() != PlayerView::TOP_DOWN) { // Если вид не сверху
+		return; // Выходим
 	}
 
-	if (SandboxCharacter->IsDead()) {
-		return;
+	if (SandboxCharacter->IsDead()) { // Если персонаж мертв
+		return; // Выходим
 	}
 
-	bMoveToMouseCursor = true;
+	bMoveToMouseCursor = true; // Разрешаем движение к курсору
 }
 
 void ASandboxPlayerController::SetDestinationReleased() {
-	ASandboxCharacter* SandboxCharacter = Cast<ASandboxCharacter>(GetCharacter());
-	if (!SandboxCharacter) {
-		return;
+	ASandboxCharacter* SandboxCharacter = Cast<ASandboxCharacter>(GetCharacter()); // Получаем персонажа
+	if (!SandboxCharacter) { // Если персонаж не найден
+		return; // Выходим
 	}
 
-	if (SandboxCharacter->GetSandboxPlayerView() != PlayerView::TOP_DOWN) {
-		return;
+	if (SandboxCharacter->GetSandboxPlayerView() != PlayerView::TOP_DOWN) { // Если вид не сверху
+		return; // Выходим
 	}
 
-	if (SandboxCharacter->IsDead()) {
-		return;
+	if (SandboxCharacter->IsDead()) { // Если персонаж мертв
+		return; // Выходим
 	}
 
-	bMoveToMouseCursor = false;
+	bMoveToMouseCursor = false; // Запрещаем движение к курсору
 }
 
 void ASandboxPlayerController::OnMainActionPressedInternal() {
-	if (!IsGameInputBlocked()) {
-		OnMainActionPressed();
+	if (!IsGameInputBlocked()) { // Если игровой ввод не заблокирован
+		OnMainActionPressed(); // Вызов основной действия
 	}
 }
 
 void ASandboxPlayerController::OnMainActionReleasedInternal() {
-	if (!IsGameInputBlocked()) {
-		OnMainActionReleased();
+	if (!IsGameInputBlocked()) { // Если игровой ввод не заблокирован
+		OnMainActionReleased(); // Вызов основной действия на отпускание
 	}
 }
 
 void ASandboxPlayerController::OnAltActionPressedInternal() {
-	if (!IsGameInputBlocked()) {
-		OnAltActionPressed();
+	if (!IsGameInputBlocked()) { // Если игровой ввод не заблокирован
+		OnAltActionPressed(); // Вызов альтернативного действия
 	}
 }
 
 void ASandboxPlayerController::OnAltActionReleasedInternal() {
-	if (!IsGameInputBlocked()) {
-		OnAltActionReleased();
+	if (!IsGameInputBlocked()) { // Если игровой ввод не заблокирован
+		OnAltActionReleased(); // Вызов альтернативного действия на отпускание
 	}
 }
 
 void ASandboxPlayerController::OnMainActionPressed() {
-
+	// Основное действие на нажатие
 }
 
 void ASandboxPlayerController::OnMainActionReleased() {
-
+	// Основное действие на отпускание
 }
 
 void ASandboxPlayerController::OnAltActionPressed() {
-
+	// Альтернативное действие на нажатие
 }
 
 void ASandboxPlayerController::OnAltActionReleased() {
-
+	// Альтернативное действие на отпускание
 }
 
 void ASandboxPlayerController::ToggleView() {
-	if (IsGameInputBlocked()) {
-		return;
+	if (IsGameInputBlocked()) { // Если игровой ввод заблокирован
+		return; // Выходим
 	}
 
-	
+	// Код для переключения вида
 }
 
 void ASandboxPlayerController::OnPossess(APawn* NewPawn) {
-	Super::OnPossess(NewPawn);
+	Super::OnPossess(NewPawn); // Вызов родительского метода OnPossess
 
-	ASandboxCharacter* SandboxCharacter = Cast<ASandboxCharacter>(NewPawn);
-	if (SandboxCharacter) {
-		SandboxCharacter->EnableInput(this);
-		if (SandboxCharacter->GetSandboxPlayerView() == PlayerView::TOP_DOWN) {
-			//bShowMouseCursor = true;
+	ASandboxCharacter* SandboxCharacter = Cast<ASandboxCharacter>(NewPawn); // Получаем нового персонажа
+	if (SandboxCharacter) { // Если персонаж валиден
+		SandboxCharacter->EnableInput(this); // Включаем ввод для персонажа
+		if (SandboxCharacter->GetSandboxPlayerView() == PlayerView::TOP_DOWN) { // Если вид сверху
+			//bShowMouseCursor = true; // Показать курсор
 		} else {
-			//bShowMouseCursor = false;
+			//bShowMouseCursor = false; // Скрыть курсор
 		}
 	}
 
-	//bShowMouseCursor = false;
+	//bShowMouseCursor = false; // Скрыть курсор
 }
 
 void ASandboxPlayerController::BlockGameInput() {
-	//UWidgetBlueprintLibrary::SetInputMode_GameAndUI(this, nullptr, false, false);
-	bIsGameInputBlocked = true;
-	//bShowMouseCursor = true;
+	//UWidgetBlueprintLibrary::SetInputMode_GameAndUI(this, nullptr, false, false); // Блокировка ввода
+	bIsGameInputBlocked = true; // Устанавливаем флаг блокировки ввода
+	//bShowMouseCursor = true; // Показать курсор
 }
 
 void ASandboxPlayerController::UnblockGameInput() {
-	//UWidgetBlueprintLibrary::SetInputMode_GameOnly(this);
-	bIsGameInputBlocked = false;
-	//bShowMouseCursor = false;
+	//UWidgetBlueprintLibrary::SetInputMode_GameOnly(this); // Разблокировка ввода
+	bIsGameInputBlocked = false; // Сбрасываем флаг блокировки ввода
+	//bShowMouseCursor = false; // Скрыть курсор
 }
 
 void ASandboxPlayerController::TraceAndSelectActionObject() {
-	if (!IsGameInputBlocked()) {
-		FHitResult Res = TracePlayerActionPoint();
-		OnTracePlayerActionPoint(Res);
-		if (Res.bBlockingHit) {
-			AActor* SelectedActor = Res.GetActor();
-			if (SelectedActor) {
-				SelectActionObject(SelectedActor);
+	if (!IsGameInputBlocked()) { // Если игровой ввод не заблокирован
+		FHitResult Res = TracePlayerActionPoint(); // Получаем результат трассировки
+		OnTracePlayerActionPoint(Res); // Обрабатываем результат трассировки
+		if (Res.bBlockingHit) { // Если произошло столкновение
+			AActor* SelectedActor = Res.GetActor(); // Получаем актера, с которым произошло столкновение
+			if (SelectedActor) { // Если актер валиден
+				SelectActionObject(SelectedActor); // Выбор объекта действия
 			}
 		}
 	}
 }
 
 FHitResult ASandboxPlayerController::TracePlayerActionPoint() {
-	ASandboxCharacter* SandboxCharacter = Cast<ASandboxCharacter>(GetCharacter());
-	if (!SandboxCharacter) {
-		return FHitResult();
+	ASandboxCharacter* SandboxCharacter = Cast<ASandboxCharacter>(GetCharacter()); // Получаем персонажа
+	if (!SandboxCharacter) { // Если персонаж не найден
+		return FHitResult(); // Возвращаем пустой результат
 	}
 
-	if (SandboxCharacter->GetSandboxPlayerView() == PlayerView::THIRD_PERSON || SandboxCharacter->GetSandboxPlayerView() == PlayerView::FIRST_PERSON) {
-		float MaxUseDistance = SandboxCharacter->InteractionTargetLength;
+	if (SandboxCharacter->GetSandboxPlayerView() == PlayerView::THIRD_PERSON || SandboxCharacter->GetSandboxPlayerView() == PlayerView::FIRST_PERSON) { // Если вид третий или первый
+		float MaxUseDistance = SandboxCharacter->InteractionTargetLength; // Максимальная дистанция взаимодействия
 
-		if (SandboxCharacter->GetSandboxPlayerView() == PlayerView::THIRD_PERSON) {
-			if (SandboxCharacter->GetCameraBoom() != NULL) {
-				//MaxUseDistance = Character->GetCameraBoom()->TargetArmLength + MaxUseDistance;
+		if (SandboxCharacter->GetSandboxPlayerView() == PlayerView::THIRD_PERSON) { // Если вид третий
+			if (SandboxCharacter->GetCameraBoom() != NULL) { // Если камера существует
+				//MaxUseDistance = Character->GetCameraBoom()->TargetArmLength + MaxUseDistance; // Корректировка максимальной дистанции
 			}
 		}
 
-		FVector CamLoc;
-		FRotator CamRot;
-		GetPlayerViewPoint(CamLoc, CamRot);
+		FVector CamLoc; // Локация камеры
+		FRotator CamRot; // Поворот камеры
+		GetPlayerViewPoint(CamLoc, CamRot); // Получаем точку зрения игрока
 
-		const FVector StartTrace = CamLoc;
-		const FVector Direction = CamRot.Vector();
-		const FVector EndTrace = StartTrace + (Direction * MaxUseDistance);
+		const FVector StartTrace = CamLoc; // Начальная точка трассировки
+		const FVector Direction = CamRot.Vector(); // Направление трассировки
+		const FVector EndTrace = StartTrace + (Direction * MaxUseDistance); // Конечная точка трассировки
 
-		FCollisionQueryParams TraceParams(FName(TEXT("")), true, this);
-		//TraceParams.bTraceAsyncScene = true;
-		//TraceParams.bReturnPhysicalMaterial = false;
+		FCollisionQueryParams TraceParams(FName(TEXT("")), true, this); // Параметры трассировки
+		//TraceParams.bTraceAsyncScene = true; // Асинхронная трассировка
+		//TraceParams.bReturnPhysicalMaterial = false; // Не возвращать физический материал
 
-		TraceParams.bTraceComplex = true;
-		TraceParams.bReturnFaceIndex = true;
-		TraceParams.AddIgnoredActor(SandboxCharacter);
+		TraceParams.bTraceComplex = true; // Сложная трассировка
+		TraceParams.bReturnFaceIndex = true; // Возвращать индекс поверхности
+		TraceParams.AddIgnoredActor(SandboxCharacter); // Игнорировать самого персонажа
 
-		FHitResult Hit(ForceInit);
-		GetWorld()->LineTraceSingleByChannel(Hit, StartTrace, EndTrace, ECC_Visibility, TraceParams);
+		FHitResult Hit(ForceInit); // Инициализация результата трассировки
+		GetWorld()->LineTraceSingleByChannel(Hit, StartTrace, EndTrace, ECC_Visibility, TraceParams); // Выполнение трассировки
 
-		return Hit;
+		return Hit; // Возвращаем результат трассировки
 	}
 
-	if (SandboxCharacter->GetSandboxPlayerView() == PlayerView::TOP_DOWN) {
-		FHitResult Hit;
-		GetHitResultUnderCursor(ECC_Camera, false, Hit);
-		return Hit;
+	if (SandboxCharacter->GetSandboxPlayerView() == PlayerView::TOP_DOWN) { // Если вид сверху
+		FHitResult Hit; // Результат попадания
+		GetHitResultUnderCursor(ECC_Camera, false, Hit); // Получаем результат попадания под курсором
+		return Hit; // Возвращаем результат
 	}
 
-	return FHitResult();
+	return FHitResult(); // Возвращаем пустой результат
 }
 
 void SetRenderCustomDepth2(AActor* Actor, bool RenderCustomDepth) {
-	TArray<UStaticMeshComponent*> MeshComponentList;
-	Actor->GetComponents<UStaticMeshComponent>(MeshComponentList);
+	TArray<UStaticMeshComponent*> MeshComponentList; // Список компонентов статической сетки
+	Actor->GetComponents<UStaticMeshComponent>(MeshComponentList); // Получаем все компоненты статической сетки
 
-	for (UStaticMeshComponent* MeshComponent : MeshComponentList) {
-		MeshComponent->SetRenderCustomDepth(RenderCustomDepth);
+	for (UStaticMeshComponent* MeshComponent : MeshComponentList) { // Итерация по компонентам
+		MeshComponent->SetRenderCustomDepth(RenderCustomDepth); // Установка рендеринга с пользовательской глубиной
 	}
 }
 
 void ASandboxPlayerController::OnSelectActionObject(AActor* Actor) {
-	SetRenderCustomDepth2(Actor, true);
+	SetRenderCustomDepth2(Actor, true); // Устанавливаем рендеринг с пользовательской глубиной для выбранного объекта
 }
 
 void ASandboxPlayerController::OnDeselectActionObject(AActor* Actor) {
-	SetRenderCustomDepth2(Actor, false);
+	SetRenderCustomDepth2(Actor, false); // Устанавливаем рендеринг без пользовательской глубины для отмененного выбора
 }
 
 void ASandboxPlayerController::SelectActionObject(AActor* Actor) {
-	ASandboxObject* Obj = Cast<ASandboxObject>(Actor);
+	ASandboxObject* Obj = Cast<ASandboxObject>(Actor); // Приведение типа к ASandboxObject
 
-	if (SelectedObject != Obj) {
-		if (SelectedObject != nullptr && SelectedObject->IsValidLowLevel()) {
-			OnDeselectActionObject(SelectedObject);
+	if (SelectedObject != Obj) { // Если выбранный объект не равен текущему
+		if (SelectedObject != nullptr && SelectedObject->IsValidLowLevel()) { // Если предыдущий объект валиден
+			OnDeselectActionObject(SelectedObject); // Отменяем выбор предыдущего объекта
 		}
 	}
 
-	if (Obj != nullptr) {
-		OnSelectActionObject(Obj);
-		SelectedObject = Obj;
+	if (Obj != nullptr) { // Если объект валиден
+		OnSelectActionObject(Obj); // Выбираем новый объект
+		SelectedObject = Obj; // Устанавливаем выбранный объект
 	} else {
-		if (SelectedObject != nullptr && SelectedObject->IsValidLowLevel()) {
-			OnDeselectActionObject(SelectedObject);
+		if (SelectedObject != nullptr && SelectedObject->IsValidLowLevel()) { // Если ранее выбранный объект валиден
+			OnDeselectActionObject(SelectedObject); // Отменяем выбор
 		}
 	}
 }
 
 UContainerComponent* ASandboxPlayerController::GetContainerByName(FName ContainerName) {
-	APawn* PlayerPawn = GetPawn();
-	if (PlayerPawn) {
-		TArray<UContainerComponent*> Components;
-		PlayerPawn->GetComponents<UContainerComponent>(Components);
+	APawn* PlayerPawn = GetPawn(); // Получаем пешку игрока
+	if (PlayerPawn) { // Если пешка валидна
+		TArray<UContainerComponent*> Components; // Список компонентов контейнера
+		PlayerPawn->GetComponents<UContainerComponent>(Components); // Получаем все компоненты контейнера
 
-		for (UContainerComponent* Container : Components) {
-			if (Container->GetName() == ContainerName.ToString()) {
-				return Container;
+		for (UContainerComponent* Container : Components) { // Итерация по компонентам
+			if (Container->GetName() == ContainerName.ToString()) { // Если имя контейнера совпадает
+				return Container; // Возвращаем контейнер
 			}
 		}
 	}
 
-	return nullptr;
+	return nullptr; // Возвращаем nullptr, если контейнер не найден
 }
 
 UContainerComponent* ASandboxPlayerController::GetInventory() {
-	return GetContainerByName(TEXT("Inventory"));
+	return GetContainerByName(TEXT("Inventory")); // Получаем контейнер инвентаря
 }
 
 bool ASandboxPlayerController::TakeObjectToInventory() {
-	UContainerComponent* Inventory = GetInventory();
+	UContainerComponent* Inventory = GetInventory(); // Получаем инвентарь
 
-	if (Inventory != nullptr) {
-		FHitResult ActionPoint = TracePlayerActionPoint();
-		if (ActionPoint.bBlockingHit) {
-			ASandboxObject* Obj = Cast<ASandboxObject>(ActionPoint.GetActor());
-			if (Obj) {
-				if (Obj->CanTake(nullptr)) {
-					if (Inventory->AddObject(Obj)) {
-						if (LevelController) {
-							LevelController->RemoveSandboxObject(Obj);
+	if (Inventory != nullptr) { // Если инвентарь валиден
+		FHitResult ActionPoint = TracePlayerActionPoint(); // Получаем точку действия
+		if (ActionPoint.bBlockingHit) { // Если произошло столкновение
+			ASandboxObject* Obj = Cast<ASandboxObject>(ActionPoint.GetActor()); // Приведение типа к ASandboxObject
+			if (Obj) { // Если объект валиден
+				if (Obj->CanTake(nullptr)) { // Если объект можно взять
+					if (Inventory->AddObject(Obj)) { // Добавляем объект в инвентарь
+						if (LevelController) { // Если контроллер уровня валиден
+							LevelController->RemoveSandboxObject(Obj); // Удаляем объект из уровня
 						} else {
-							Obj->Destroy();
+							Obj->Destroy(); // Уничтожаем объект
 						}
 
-						return true;
+						return true; // Возвращаем успех
 					}
 				}
 			}
 		}
 	}
 
-	return false;
+	return false; // Возвращаем неудачу
 }
 
 bool ASandboxPlayerController::OpenObjectContainer(ASandboxObject* Obj) {
-	if (Obj != nullptr) {
-		TArray<UContainerComponent*> Components;
-		Obj->GetComponents<UContainerComponent>(Components);
-		for (UContainerComponent* Container : Components) {
-			if (Container->GetName() == "ObjectContainer") {
-				this->OpenedObject = Obj;
-				this->OpenedContainer = Container;
-				return true;
+	if (Obj != nullptr) { // Если объект валиден
+		TArray<UContainerComponent*> Components; // Список компонентов контейнера
+		Obj->GetComponents<UContainerComponent>(Components); // Получаем компоненты контейнера
+		for (UContainerComponent* Container : Components) { // Итерация по компонентам
+			if (Container->GetName() == "ObjectContainer") { // Если имя контейнера совпадает
+				this->OpenedObject = Obj; // Устанавливаем открытый объект
+				this->OpenedContainer = Container; // Устанавливаем открытый контейнер
+				return true; // Возвращаем успех
 			}
 		}
 	}
 
-	return false;
+	return false; // Возвращаем неудачу
 }
 
 bool ASandboxPlayerController::HasOpenContainer() { 
-	return OpenedObject != nullptr; 
+	return OpenedObject != nullptr; // Проверка, открыт ли контейнер
 }
 
 bool ASandboxPlayerController::TraceAndOpenObjectContainer() {
-	FHitResult ActionPoint = TracePlayerActionPoint();
+	FHitResult ActionPoint = TracePlayerActionPoint(); // Получаем точку действия
 
-	if (ActionPoint.bBlockingHit) {
-		ASandboxObject* Obj = Cast<ASandboxObject>(ActionPoint.GetActor());
-		return OpenObjectContainer(Obj);
+	if (ActionPoint.bBlockingHit) { // Если произошло столкновение
+		ASandboxObject* Obj = Cast<ASandboxObject>(ActionPoint.GetActor()); // Приведение типа к ASandboxObject
+		return OpenObjectContainer(Obj); // Открываем контейнер объекта
 	}
 
-	return false;
+	return false; // Возвращаем неудачу
 }
 
 void ASandboxPlayerController::CloseObjectWithContainer() {
-	this->OpenedObject = nullptr;
-	this->OpenedContainer = nullptr;
+	this->OpenedObject = nullptr; // Закрываем открытый объект
+	this->OpenedContainer = nullptr; // Закрываем открытый контейнер
 }
 
 void ASandboxPlayerController::OnTracePlayerActionPoint(const FHitResult& Res) {
-
+	// Обработка результата трассировки точки действия игрока
 }
 
 bool ASandboxPlayerController::IsGameInputBlocked() {
-	ASandboxCharacter* SandboxCharacter = Cast<ASandboxCharacter>(GetCharacter());
-	if (SandboxCharacter && !SandboxCharacter->InputEnabled()) {
-		return true;
+	ASandboxCharacter* SandboxCharacter = Cast<ASandboxCharacter>(GetCharacter()); // Получаем персонажа
+	if (SandboxCharacter && !SandboxCharacter->InputEnabled()) { // Если персонаж не может получать ввод
+		return true; // Возвращаем, что ввод заблокирован
 	}
 
-	return bIsGameInputBlocked; 
+	return bIsGameInputBlocked; // Возвращаем состояние блокировки ввода
 }
 
-
 void ASandboxPlayerController::SetCurrentInventorySlot(int32 Slot) { 
-	ASandboxCharacter* SandboxCharacter = Cast<ASandboxCharacter>(GetCharacter());
-	if (SandboxCharacter && SandboxCharacter->IsDead()) {
-		return;
+	ASandboxCharacter* SandboxCharacter = Cast<ASandboxCharacter>(GetCharacter()); // Получаем персонажа
+	if (SandboxCharacter && SandboxCharacter->IsDead()) { // Если персонаж мертв
+		return; // Выходим
 	}
 
-	CurrentInventorySlot = Slot; 
+	CurrentInventorySlot = Slot; // Устанавливаем текущий слот инвентаря
 }
 
 UContainerComponent* ASandboxPlayerController::GetOpenedContainer() { 
-	return this->OpenedContainer; 
+	return this->OpenedContainer; // Возвращаем открытый контейнер
 }
 
 ASandboxObject* ASandboxPlayerController::GetOpenedObject() { 
-	return this->OpenedObject; 
+	return this->OpenedObject; // Возвращаем открытый объект
 }
 
-void  ASandboxPlayerController::ShowMouseCursor(bool bShowCursor) { 
-	this->bShowMouseCursor = bShowCursor; 
+void ASandboxPlayerController::ShowMouseCursor(bool bShowCursor) { 
+	this->bShowMouseCursor = bShowCursor; // Установка видимости курсора
 };
 
 void ASandboxPlayerController::OnContainerMainAction(int32 SlotId, FName ContainerName) {
-
+	// Основное действие с контейнером
 }
 
 void ASandboxPlayerController::OnContainerDropSuccess(int32 SlotId, FName SourceName, FName TargetName) {
-
+	// Успешное действие при сбросе контейнера
 }
 
 bool ASandboxPlayerController::OnContainerDropCheck(int32 SlotId, FName ContainerName, const ASandboxObject* Obj) const {
-	return true;
+	return true; // Проверка на возможность сброса объекта в контейнер
 }
 
 void ASandboxPlayerController::TransferContainerStack_Implementation(const FString& ObjectNetUid, const FString& ContainerName, const FContainerStack& Stack, const int SlotId) {
-	if (LevelController) {
-		ASandboxObject* Obj = LevelController->GetObjectByNetUid(ObjectNetUid);
-		if (Obj) {
-			TArray<UContainerComponent*> Components;
-			Obj->GetComponents<UContainerComponent>(Components);
-			for (UContainerComponent* Container : Components) {
-				if (Container->GetName() == ContainerName) {
-					Container->SetStackDirectly(Stack, SlotId);
+	if (LevelController) { // Если контроллер уровня валиден
+		ASandboxObject* Obj = LevelController->GetObjectByNetUid(ObjectNetUid); // Получаем объект по его сетевому UID
+		if (Obj) { // Если объект валиден
+			TArray<UContainerComponent*> Components; // Список компонентов контейнера
+			Obj->GetComponents<UContainerComponent>(Components); // Получаем компоненты контейнера
+			for (UContainerComponent* Container : Components) { // Итерация по компонентам
+				if (Container->GetName() == ContainerName) { // Если имя совпадает
+					Container->SetStackDirectly(Stack, SlotId); // Устанавливаем стек напрямую
 				}
 			}
 
-			Obj->ForceNetUpdate();
+			Obj->ForceNetUpdate(); // Принудительное обновление сетевого состояния объекта
 		}
 	}
 }
 
 void ASandboxPlayerController::TransferInventoryStack_Implementation(const FString& ContainerName, const FContainerStack& Stack, const int SlotId) {
-	ACharacter* PlayerCharacter = Cast<ACharacter>(GetCharacter());
-	TArray<UContainerComponent*> Components;
-	PlayerCharacter->GetComponents<UContainerComponent>(Components);
-	for (UContainerComponent* Container : Components) {
-		if (Container->GetName() == ContainerName) {
-			Container->SetStackDirectly(Stack, SlotId);
+	ACharacter* PlayerCharacter = Cast<ACharacter>(GetCharacter()); // Получаем персонажа
+	TArray<UContainerComponent*> Components; // Список компонентов контейнера
+	PlayerCharacter->GetComponents<UContainerComponent>(Components); // Получаем компоненты контейнера
+	for (UContainerComponent* Container : Components) { // Итерация по компонентам
+		if (Container->GetName() == ContainerName) { // Если имя совпадает
+			Container->SetStackDirectly(Stack, SlotId); // Устанавливаем стек напрямую
 		}
 	}
 
-	PlayerCharacter->ForceNetUpdate();
+	PlayerCharacter->ForceNetUpdate(); // Принудительное обновление сетевого состояния персонажа
 }
 
 ASandboxLevelController* ASandboxPlayerController::GetLevelController() {
-	return LevelController;
+	return LevelController; // Возвращаем контроллер уровня
 }
 
 bool ASandboxPlayerController::OnContainerSlotHover(int32 SlotId, FName ContainerName) {
-	return false;
+	return false; // Проверка на наведение курсора на слот контейнера
 }
+
