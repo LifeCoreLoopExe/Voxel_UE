@@ -1,22 +1,20 @@
+#pragma once // Защита от множественного включения этого заголовочного файла
 
-#pragma once
+#include "Engine.h" // Подключение основного заголовочного файла движка Unreal Engine
+#include "GameFramework/Actor.h" // Подключение заголовочного файла для класса Actor
+#include "SandboxEffect.generated.h" // Генерация кода для этого заголовочного файла
 
-#include "Engine.h"
-#include "GameFramework/Actor.h"
-#include "SandboxEffect.generated.h"
+// Класс для эффектов в песочнице, наследующий от AActor
+UCLASS(BlueprintType, Blueprintable) 
+class UNREALSANDBOXTOOLKIT_API ASandboxEffect : public AActor { 
+	GENERATED_BODY() // Генерация тела класса
 
-UCLASS(BlueprintType, Blueprintable)
-class UNREALSANDBOXTOOLKIT_API ASandboxEffect : public AActor {
-	GENERATED_BODY()
-	
 public:	
-	ASandboxEffect();
+	ASandboxEffect(); // Конструктор класса
 
 protected:
-
-	virtual void BeginPlay() override;
+	virtual void BeginPlay() override; // Переопределение метода BeginPlay для инициализации при старте игры
 
 public:
-
-	
+	// Здесь могут быть добавлены публичные методы и свойства класса
 };

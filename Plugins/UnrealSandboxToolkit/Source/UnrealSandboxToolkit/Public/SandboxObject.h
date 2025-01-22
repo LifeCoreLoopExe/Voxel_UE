@@ -1,186 +1,183 @@
+#pragma once // Защита от множественного включения этого заголовочного файла
 
-#pragma once
+#include "Engine.h" // Подключение основного заголовочного файла движка Unreal Engine
+#include "GameFramework/Actor.h" // Подключение заголовочного файла для класса Actor
+#include "ContainerComponent.h" // Подключение заголовочного файла для компонента контейнера
+#include "Engine/DamageEvents.h" // Подключение заголовочного файла для событий урона
+#include "SandboxObject.generated.h" // Генерация кода для этого заголовочного файла
 
-#include "Engine.h"
-#include "GameFramework/Actor.h"
-#include "ContainerComponent.h"
-#include "Engine/DamageEvents.h"
-#include "SandboxObject.generated.h"
+#define DAMAGE_ENABLE_PHYS_THRESHOLD 1.f // Определение порога активации физики при получении урона
 
-
-
-#define DAMAGE_ENABLE_PHYS_THRESHOLD 1.f
-
-
-
-UCLASS(BlueprintType, Blueprintable)
-class UNREALSANDBOXTOOLKIT_API ASandboxObject : public AActor {
-	GENERATED_BODY()
+// Класс для объектов песочницы, наследующий от AActor
+UCLASS(BlueprintType, Blueprintable) 
+class UNREALSANDBOXTOOLKIT_API ASandboxObject : public AActor { 
+	GENERATED_BODY() // Генерация тела класса
 	
 public:	
-	ASandboxObject();
+	ASandboxObject(); // Конструктор класса
 
-	//UPROPERTY(EditAnywhere, Category = "Sandbox")
-	UPROPERTY(Category = StaticMeshActor, VisibleAnywhere, BlueprintReadOnly, meta = (ExposeFunctionCategories = "Mesh,Rendering,Physics,Components|StaticMesh", AllowPrivateAccess = "true"))
-	UStaticMeshComponent* SandboxRootMesh;
+	// Основной компонент для визуализации объекта
+	UPROPERTY(Category = StaticMeshActor, VisibleAnywhere, BlueprintReadOnly, 
+		meta = (ExposeFunctionCategories = "Mesh,Rendering,Physics,Components|StaticMesh", AllowPrivateAccess = "true"))
+	UStaticMeshComponent* SandboxRootMesh; // Корневой статический меш объекта
 
-	UPROPERTY(EditAnywhere, Category = "Sandbox")
-	UTexture2D* IconTexture;
+	UPROPERTY(EditAnywhere, Category = "Sandbox") 
+	UTexture2D* IconTexture; // Текстура иконки объекта
 
-	UPROPERTY(EditAnywhere, Category = "Sandbox")
-	uint64 SandboxClassId;
+	UPROPERTY(EditAnywhere, Category = "Sandbox") 
+	uint64 SandboxClassId; // Идентификатор класса объекта
 
-	UPROPERTY(Replicated)
-	FString SandboxNetUid;
+	UPROPERTY(Replicated) 
+	FString SandboxNetUid; // Сетевая уникальная идентификация объекта
 
-	UPROPERTY(EditAnywhere, Category = "Sandbox")
-	bool bStackable;
+	UPROPERTY(EditAnywhere, Category = "Sandbox") 
+	bool bStackable; // Флаг, указывающий, можно ли складывать объекты
 
-	UPROPERTY(EditAnywhere, Category = "Sandbox")
-	uint32 MaxStackSize;
+	UPROPERTY(EditAnywhere, Category = "Sandbox") 
+	uint32 MaxStackSize; // Максимальный размер стека объектов
 
-	UPROPERTY(EditAnywhere, Category = "Sandbox")
-	TMap<FString, FString> PropertyMap;
+	UPROPERTY(EditAnywhere, Category = "Sandbox") 
+	TMap<FString, FString> PropertyMap; // Карта свойств объекта
 
-	UPROPERTY(EditAnywhere, Category = "Sandbox")
-	bool bCanPlaceSandboxObject;
+	UPROPERTY(EditAnywhere, Category = "Sandbox") 
+	bool bCanPlaceSandboxObject; // Флаг, указывающий, можно ли разместить объект в мире
 
-	UPROPERTY(EditAnywhere, Category = "Sandbox")
-	float DamageEnablePhysThreshold = DAMAGE_ENABLE_PHYS_THRESHOLD;
+	UPROPERTY(EditAnywhere, Category = "Sandbox") 
+	float DamageEnablePhysThreshold = DAMAGE_ENABLE_PHYS_THRESHOLD; // Порог активации физики при получении урона
 
 protected:
-	virtual void BeginPlay() override;
+	virtual void BeginPlay() override; // Переопределение метода BeginPlay для инициализации при старте игры
 
-	UFUNCTION()
-	void OnSleep(UPrimitiveComponent* SleepingComponent, FName BoneName);
-
-	//UFUNCTION()
-	//void OnTakeRadialDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, AController* InstigatedBy, AActor* DamageCauser);
+	UFUNCTION() 
+	void OnSleep(UPrimitiveComponent* SleepingComponent, FName BoneName); // Метод обработки сна компонента
 
 public:
+	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent,
+		class AController* EventInstigator, AActor* DamageCauser); 
+    // Метод для обработки получения урона
 
-	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser);
+	FString GetSandboxNetUid() const; // Метод для получения сетевой уникальной идентификации объекта
 
-	FString GetSandboxNetUid() const;
+	uint64 GetSandboxClassId() const; // Метод для получения идентификатора класса объекта
 
-	uint64 GetSandboxClassId() const;
+	virtual FString GetSandboxName(); // Метод для получения имени объекта песочницы
 
-	virtual FString GetSandboxName();
+	virtual int GetSandboxTypeId() const; // Метод для получения типа объекта песочницы
 
-	virtual int GetSandboxTypeId() const;
-
-	virtual int GetMaxStackSize();
+	virtual int GetMaxStackSize(); // Метод для получения максимального размера стека объектов
 	
-	virtual UTexture2D* GetSandboxIconTexture();
+	virtual UTexture2D* GetSandboxIconTexture(); // Метод для получения текстуры иконки объекта
 
-	virtual void TickInInventoryActive(float DeltaTime, UWorld* World, const FHitResult& HitResult);
+	virtual void TickInInventoryActive(float DeltaTime, UWorld* World, const FHitResult& HitResult); 
+    // Метод для обработки обновления состояния в инвентаре активного объекта 
 
-	virtual void ActionInInventoryActive(UWorld* World, const FHitResult& HitResult);
+	virtual void ActionInInventoryActive(UWorld* World, const FHitResult& HitResult); 
+    // Метод для выполнения действия с активным объектом в инвентаре 
 
-	virtual bool IsInteractive(const APawn* Source = nullptr);
+	virtual bool IsInteractive(const APawn* Source = nullptr); 
+    // Метод проверки возможности взаимодействия с объектом 
 
-	virtual void MainInteraction(const APawn* Source = nullptr);
+	virtual void MainInteraction(const APawn* Source = nullptr); 
+    // Метод выполнения основного взаимодействия с объектом 
 
-	virtual bool CanTake(const AActor* Actor = nullptr) const;
+	virtual bool CanTake(const AActor* Actor = nullptr) const; 
+    // Метод проверки возможности взять объект 
 
-	virtual void OnTerrainChange();
+	virtual void OnTerrainChange();  // Метод обработки изменения местности 
 
-	void EnablePhysics();
+	void EnablePhysics();  // Метод активации физики объекта
     
-	UContainerComponent* GetContainer(const FString& Name);
+	UContainerComponent* GetContainer(const FString& Name);  // Метод получения контейнера по имени 
 
 	template<class T>
-	T* GetFirstComponentByName(FString ComponentName) {
+	T* GetFirstComponentByName(FString ComponentName) {  // Шаблонный метод для получения первого компонента по имени
 		TArray<T*> Components;
-		GetComponents<T>(Components);
+		GetComponents<T>(Components);  // Получение всех компонентов указанного типа
 		for (T* Component : Components) {
-			if (Component->GetName() == ComponentName)
+			if (Component->GetName() == ComponentName)  // Сравнение имени компонента с заданным именем
 				return Component;
 		}
 
-		return nullptr;
+		return nullptr;  // Возвращает nullptr если компонент не найден
 	}
 
-	void SetProperty(FString Key, FString Value);
+	void SetProperty(FString Key, FString Value);  // Метод установки свойства по ключу и значению
 
-	FString GetProperty(FString Key) const;
+	FString GetProperty(FString Key) const;  // Метод получения свойства по ключу 
 
-	void RemoveProperty(FString Key);
+	void RemoveProperty(FString Key);  // Метод удаления свойства по ключу 
 
-	virtual void PostLoadProperties();
+	virtual void PostLoadProperties();  // Виртуальный метод постобработки свойств после загрузки 
 
-	virtual void OnPlaceToWorld();
+	virtual void OnPlaceToWorld();  // Виртуальный метод обработки размещения в мире 
 
-	virtual bool PlaceToWorldClcPosition(const UWorld* World, const FVector& SourcePos, const FRotator& SourceRotation, const FHitResult& Res, FVector& Location, FRotator& Rotation, bool bFinal = false) const;
+	virtual bool PlaceToWorldClcPosition(const UWorld* World, const FVector& SourcePos,
+		const FRotator& SourceRotation, const FHitResult& Res,
+		FVector& Location, FRotator& Rotation, bool bFinal = false) const;  
+    /* Виртуальный метод для вычисления позиции размещения в мире */
 
-	virtual const UStaticMeshComponent* GetMarkerMesh() const;
+	virtual const UStaticMeshComponent* GetMarkerMesh() const;  /* Виртуальный метод для получения меша маркера */
 };
 
-//TODO
+// Интерфейс для носимых объектов
 class IWearable {
-
 public:
-
 };
 
-
-UCLASS()
-class UNREALSANDBOXTOOLKIT_API ASandboxSkeletalModule : public ASandboxObject, public IWearable {
+// Класс для скелетных модулей объектов песочницы
+UCLASS() 
+class UNREALSANDBOXTOOLKIT_API ASandboxSkeletalModule : public ASandboxObject, public IWearable { 
 	GENERATED_BODY()
 
 public:
+	UPROPERTY(EditAnywhere, Category = "Sandbox") 
+	FName SkMeshBindName;  /* Имя связывания скелетной сетки */
 
-	UPROPERTY(EditAnywhere, Category = "Sandbox")
-	FName SkMeshBindName;
+	UPROPERTY(EditAnywhere, Category = "Sandbox") 
+	USkeletalMesh* SkeletalMesh;  /* Скелетная сетка */
 
-	UPROPERTY(EditAnywhere, Category = "Sandbox")
-	USkeletalMesh* SkeletalMesh;
+	UPROPERTY(EditAnywhere, Category = "Sandbox") 
+	bool bModifyFootPose;  /* Флаг изменения позы ног */
 
-	UPROPERTY(EditAnywhere, Category = "Sandbox")
-	bool bModifyFootPose;
+	UPROPERTY(EditAnywhere, Category = "Sandbox") 
+	FRotator FootRotator;  /* Поворот ног */
 
-	UPROPERTY(EditAnywhere, Category = "Sandbox")
-	FRotator FootRotator;
+	UPROPERTY(EditAnywhere, Category = "Sandbox") 
+	TMap<FString, float> MorphMap;  /* Карта морфов */
 
-	UPROPERTY(EditAnywhere, Category = "Sandbox")
-	TMap<FString, float> MorphMap;
+	UPROPERTY(EditAnywhere, Category = "Sandbox") 
+	TMap<FString, float> ParentMorphMap;  /* Карта родительских морфов */
 
-	UPROPERTY(EditAnywhere, Category = "Sandbox")
-	TMap<FString, float> ParentMorphMap;
+	UPROPERTY(EditAnywhere, Category = "Sandbox") 
+	TMap<FString, float> AffectParamMap;  /* Карта параметров воздействия */
 
-	UPROPERTY(EditAnywhere, Category = "Sandbox")
-	TMap<FString, float> AffectParamMap;
+	virtual float GetAffectParam(const FString& ParamName) const;  /* Метод получения параметра воздействия по имени */
 
-	virtual float GetAffectParam(const FString& ParamName) const;
+	int GetSandboxTypeId() const override;  /* Переопределение метода получения типа объекта песочницы */
 
-	int GetSandboxTypeId() const override;
-
-	void GetFootPose(FRotator& LeftFootRotator, FRotator& RightFootRotator);
-
+	void GetFootPose(FRotator& LeftFootRotator, FRotator& RightFootRotator);  
+    /* Метод получения позы ног */
 };
 
-
+// Утилиты для работы с объектами песочницы
 class UNREALSANDBOXTOOLKIT_API ASandboxObjectUtils {
-
 public:
-
-	static TArray<ASandboxObject*> GetContainerContent(AActor* AnyActor, const FString& Name);
+	static TArray<ASandboxObject*> GetContainerContent(AActor* AnyActor, const FString& Name);  
+    /* Статический метод получения содержимого контейнера */
 };
 
-UCLASS()
-class UNREALSANDBOXTOOLKIT_API USandboxDamageType : public UDamageType {
+// Класс типа урона объектов песочницы
+UCLASS() 
+class UNREALSANDBOXTOOLKIT_API USandboxDamageType : public UDamageType { 
 	GENERATED_UCLASS_BODY()
 
-
 public:
+	UPROPERTY(EditAnywhere, Category = "Sandbox") 
+	float FireDamageFactor = 1.f;  /* Коэффициент урона от огня */
 
-	UPROPERTY(EditAnywhere, Category = "Sandbox")
-	float FireDamageFactor = 1.f;
+	UPROPERTY(EditAnywhere, Category = "Sandbox") 
+	float ExplosionDamageFactor = 1.f;  /* Коэффициент урона от взрыва */
 
-	UPROPERTY(EditAnywhere, Category = "Sandbox")
-	float ExplosionDamageFactor = 1.f;
-
-	UPROPERTY(EditAnywhere, Category = "Sandbox")
-	float HitDamageFactor = 1.f;
-
+	UPROPERTY(EditAnywhere, Category = "Sandbox") 
+	float HitDamageFactor = 1.f;  /* Коэффициент урона от удара */
 };
