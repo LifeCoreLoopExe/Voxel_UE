@@ -1,57 +1,61 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// Авторские права Epic Games, Inc. Все права защищены.
 
 using UnrealBuildTool;
 
+// Объявление класса UnrealSandboxToolkit, который наследуется от ModuleRules.
 public class UnrealSandboxToolkit : ModuleRules
 {
-	public UnrealSandboxToolkit(ReadOnlyTargetRules Target) : base(Target)
-	{
-		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
-		
-		PublicIncludePaths.AddRange(
-			new string[] {
-				// ... add public include paths required here ...
-			}
-			);
-				
-		
-		PrivateIncludePaths.AddRange(
-			new string[] {
-				// ... add other private include paths required here ...
-			}
-			);
-			
-		
-		PublicDependencyModuleNames.AddRange(
-			new string[]
-			{
-				"Core",
-				// ... add other public dependencies that you statically link with here ...
-			}
-			);
-			
-		
-		PrivateDependencyModuleNames.AddRange(
-			new string[]
-			{
-				"CoreUObject",
-				"Engine",
-				"Slate",
-				"SlateCore",
-				"Json",
-				"JsonUtilities",
-				"AIModule",
-				"UMG"
-				// ... add private dependencies that you statically link with here ...	
-			}
-			);
-		
-		
-		DynamicallyLoadedModuleNames.AddRange(
-			new string[]
-			{
-				// ... add any modules that your module loads dynamically here ...
-			}
-			);
-	}
+    // Конструктор класса UnrealSandboxToolkit, принимающий ReadOnlyTargetRules в качестве параметра.
+    public UnrealSandboxToolkit(ReadOnlyTargetRules Target) : base(Target)
+    {
+        // Установка режима использования предкомпилированных заголовков (PCH).
+        PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
+
+        // Добавление путей для публичных включений.
+        PublicIncludePaths.AddRange(
+            new string[] {
+                // ... добавьте здесь необходимые публичные пути включений ...
+            }
+        );
+
+        // Добавление путей для приватных включений.
+        PrivateIncludePaths.AddRange(
+            new string[] {
+                // ... добавьте здесь другие необходимые приватные пути включений ...
+            }
+        );
+
+        // Добавление имен модулей, от которых зависит данный модуль (публичные зависимости).
+        PublicDependencyModuleNames.AddRange(
+            new string[]
+            {
+                "Core",
+                // ... добавьте здесь другие публичные зависимости, которые статически связываются ...
+            }
+        );
+
+        // Добавление имен модулей, от которых зависит данный модуль (приватные зависимости).
+        PrivateDependencyModuleNames.AddRange(
+            new string[]
+            {
+                "CoreUObject",
+                "Engine",
+                "Slate",
+                "SlateCore",
+                "Json",
+                "JsonUtilities",
+                "AIModule",
+                "UMG"
+                // ... добавьте здесь приватные зависимости, которые статически связываются ...
+            }
+        );
+
+        // Добавление имен модулей, которые динамически загружаются данным модулем.
+        DynamicallyLoadedModuleNames.AddRange(
+            new string[]
+            {
+                // ... добавьте здесь любые модули, которые ваш модуль загружает динамически ...
+            }
+        );
+    }
 }
