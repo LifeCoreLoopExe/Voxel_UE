@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Заполните информацию об авторских правах на странице "Описание" в настройках проекта.
 
 #pragma once
 
@@ -6,151 +6,168 @@
 #include "GameFramework/Actor.h"
 #include "SandboxEnvironment.generated.h"
 
+// Структура для хранения игрового времени
 struct TSandboxGameTime {
-	int days;
-	int hours;
-	int minutes;
-	int seconds;
-
-	int month;
-	int year;
+    int days;        // Дни
+    int hours;       // Часы
+    int minutes;     // Минуты
+    int seconds;     // Секунды
+    int month;       // Месяц
+    int year;        // Год
 };
 
-
+// Класс окружения песочницы, наследуемый от AActor
 UCLASS()
 class UNREALSANDBOXTOOLKIT_API ASandboxEnvironment : public AActor
 {
-	GENERATED_BODY()
-	
-public:	
-	ASandboxEnvironment();
+    GENERATED_BODY()
 
-	virtual void BeginPlay() override;
-	
-	virtual void Tick( float DeltaSeconds ) override;
+public:
+    ASandboxEnvironment(); // Конструктор
 
-	UPROPERTY(EditAnywhere, Category = "Sandbox")
-	ADirectionalLight* DirectionalLightSource;
+    virtual void BeginPlay() override; // Метод, вызываемый при начале игры
 
-	UPROPERTY(EditAnywhere, Category = "Sandbox")
-	ASkyLight* SkyLight;
+    virtual void Tick(float DeltaSeconds) override; // Метод, вызываемый каждый кадр
 
-	UPROPERTY(EditAnywhere, Category = "Sandbox")
-	AExponentialHeightFog* GlobalFog;
+    // Источник направленного света
+    UPROPERTY(EditAnywhere, Category = "Sandbox")
+    ADirectionalLight* DirectionalLightSource;
 
-	UPROPERTY(EditAnywhere, Category = "Sandbox")
-	AStaticMeshActor* CaveSphere;
+    // Источник света неба
+    UPROPERTY(EditAnywhere, Category = "Sandbox")
+    ASkyLight* SkyLight;
 
-	UPROPERTY(EditAnywhere, Category = "Sandbox")
-	AAmbientSound* AmbientSound;
+    // Глобальный туман
+    UPROPERTY(EditAnywhere, Category = "Sandbox")
+    AExponentialHeightFog* GlobalFog;
 
-	//UPROPERTY(EditAnywhere, Category = "Sandbox")
-	//UCurveFloat* DayNightCycleSkyLightCurve;
+    // Сфера пещеры
+    UPROPERTY(EditAnywhere, Category = "Sandbox")
+    AStaticMeshActor* CaveSphere;
 
-	UPROPERTY(EditAnywhere, Category = "Sandbox")
-	UCurveFloat* HeightCurve;
+    // Фоновый звук
+    UPROPERTY(EditAnywhere, Category = "Sandbox")
+    AAmbientSound* AmbientSound;
 
-	//UPROPERTY(EditAnywhere, Category = "Sandbox Cave")
-	//float CaveSkyLightRatio;
+    // Кривая изменения высоты
+    UPROPERTY(EditAnywhere, Category = "Sandbox")
+    UCurveFloat* HeightCurve;
 
-	UPROPERTY(EditAnywhere, Category = "Sandbox Cave")
-	float CaveSkyLightIntensity;
+    // Интенсивность света неба в пещере
+    UPROPERTY(EditAnywhere, Category = "Sandbox Cave")
+    float CaveSkyLightIntensity;
 
-	UPROPERTY(EditAnywhere, Category = "Sandbox")
-	UCurveFloat* CaveSunLightCurve;
+    // Кривая изменения солнечного света в пещере
+    UPROPERTY(EditAnywhere, Category = "Sandbox")
+    UCurveFloat* CaveSunLightCurve;
 
-	UPROPERTY(EditAnywhere, Category = "Sandbox")
-	UCurveFloat* GlobalFogDensityCurve;
+    // Кривая изменения плотности глобального тумана
+    UPROPERTY(EditAnywhere, Category = "Sandbox")
+    UCurveFloat* GlobalFogDensityCurve;
 
-	//UPROPERTY(EditAnywhere, Category = "Sandbox")
-	//UCurveFloat* GlobalFogOpacityCurve;
+    // Скорость времени
+    UPROPERTY(EditAnywhere, Replicated, Category = "Sandbox")
+    float TimeSpeed;
 
-	UPROPERTY(EditAnywhere, Replicated, Category = "Sandbox")
-	float TimeSpeed;
+    // Плотность тумана в пещере
+    UPROPERTY(EditAnywhere, Category = "Sandbox Cave")
+    float CaveFogDensity;
 
-	UPROPERTY(EditAnywhere, Category = "Sandbox Cave")
-	float CaveFogDensity;
+    // Включить цикл дня и ночи
+    UPROPERTY(EditAnywhere, Category = "Sandbox DayNight cycle")
+    bool bEnableDayNightCycle;
 
-	//UPROPERTY(EditAnywhere, Category = "Sandbox Cave")
-	//float CaveFogOpacity;
+    // Начальный год
+    UPROPERTY(EditAnywhere, Category = "Sandbox DayNight cycle")
+    int InitialYear = 2016;
 
-	//UPROPERTY(EditAnywhere, Category = "Sandbox Cave")
-	//FLinearColor CaveFogInscatteringColor;
+    // Начальный месяц
+    UPROPERTY(EditAnywhere, Category = "Sandbox DayNight cycle")
+    int InitialMonth = 6;
 
-	UPROPERTY(EditAnywhere, Category = "Sandbox DayNight cycle")
-	bool bEnableDayNightCycle;
+    // Начальный день
+    UPROPERTY(EditAnywhere, Category = "Sandbox DayNight cycle")
+    int InitialDay = 10;
 
-	UPROPERTY(EditAnywhere, Category = "Sandbox DayNight cycle")
-	int InitialYear = 2016;
+    // Часовой пояс
+    UPROPERTY(EditAnywhere, Category = "Sandbox DayNight cycle")
+    int TimeZone;
 
-	UPROPERTY(EditAnywhere, Category = "Sandbox DayNight cycle")
-	int InitialMonth = 6;
+    // Широта
+    UPROPERTY(EditAnywhere, Category = "Sandbox DayNight cycle")
+    float Lat;
 
-	UPROPERTY(EditAnywhere, Category = "Sandbox DayNight cycle")
-	int InitialDay = 10;
+    // Долгота
+    UPROPERTY(EditAnywhere, Category = "Sandbox DayNight cycle")
+    float Lng;
 
-	//UPROPERTY(EditAnywhere, Category = "Sandbox DayNight cycle")
-	//int InitialHour = 12;
+    // Смещение реального времени
+    UPROPERTY(Replicated)
+    double RealTimeOffset = 0;
 
-	UPROPERTY(EditAnywhere, Category = "Sandbox DayNight cycle")
-	int TimeZone;
+    // Рассчитать игровое время
+    float ClcGameTime(float RealServerTime);
 
-	UPROPERTY(EditAnywhere, Category = "Sandbox DayNight cycle")
-	float Lat;
+    // Рассчитать локальное игровое время
+    TSandboxGameTime ClcLocalGameTime(float RealServerTime);
 
-	UPROPERTY(EditAnywhere, Category = "Sandbox DayNight cycle")
-	float Lng;
+    // Рассчитать игровое время дня
+    TSandboxGameTime ClcGameTimeOfDay(float RealServerTime, bool bAccordingTimeZone);
 
-	UPROPERTY(Replicated)
-	double RealTimeOffset = 0;
+    // Рассчитать игровое время дня
+    TSandboxGameTime ClcGameTimeOfDay();
 
-	float ClcGameTime(float RealServerTime);
+    // Установить временное смещение
+    void SetTimeOffset(float time);
 
-	TSandboxGameTime ClcLocalGameTime(float RealServerTime);
+    // Получить новое временное смещение
+    double GetNewTimeOffset();
 
-	TSandboxGameTime ClcGameTimeOfDay(float RealServerTime, bool bAccordingTimeZone);
+    // Обновить позицию игрока
+    virtual void UpdatePlayerPosition(FVector Pos, APlayerController* Controller);
 
-	TSandboxGameTime ClcGameTimeOfDay();
+    // Установить режим пещеры
+    void SetCaveMode(bool bCaveModeEnabled);
 
-	void SetTimeOffset(float time);
+    // Проверить, включен ли режим пещеры
+    bool IsCaveMode();
 
-	double GetNewTimeOffset();
+    // Проверить, ночь ли сейчас
+    bool IsNight() const;
 
-	virtual void UpdatePlayerPosition(FVector Pos, APlayerController* Controller);
+    // Получить текущее время в виде строки
+    UFUNCTION(BlueprintCallable, Category = "Sandbox")
+    FString GetCurrentTimeAsString();
 
-	void SetCaveMode(bool bCaveModeEnabled);
-
-	bool IsCaveMode();
-
-	bool IsNight() const;
-
-	UFUNCTION(BlueprintCallable, Category = "Sandbox")
-	FString GetCurrentTimeAsString();
-	
 protected:
-
-	virtual float ClcHeightFactor() const;
+    // Рассчитать фактор высоты
+    virtual float ClcHeightFactor() const;
 
 private:
+    // Флаг, указывающий, ночь ли сейчас
+    bool bIsNight = false;
 
-	bool bIsNight = false;
+    // Флаг, указывающий, включен ли режим пещеры
+    bool bCaveMode = false;
 
-	bool bCaveMode = false;
+    // Последнее время
+    float LastTime;
 
-	float LastTime;
+    // Начальная непрозрачность тумана
+    float InitialFogOpacity;
 
-	float InitialFogOpacity;
+    // Начальная плотность тумана
+    float InitialFogDensity;
 
-	float InitialFogDensity;
+    // Выполнить цикл дня и ночи
+    void PerformDayNightCycle();
 
-	void PerformDayNightCycle();
+    // Позиция игрока
+    FVector PlayerPos;
 
-	//FLinearColor FogColor;
+    // Начальная интенсивность света неба
+    float InitialSkyIntensity;
 
-	FVector PlayerPos;
-
-	float InitialSkyIntensity;
-
-	float InitialSunIntensity;
-	
+    // Начальная интенсивность солнечного света
+    float InitialSunIntensity;
 };
