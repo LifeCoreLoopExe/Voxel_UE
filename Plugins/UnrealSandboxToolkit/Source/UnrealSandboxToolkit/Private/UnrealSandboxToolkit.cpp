@@ -1,4 +1,3 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "UnrealSandboxToolkit.h" // Включает заголовочный файл для UnrealSandboxToolkit
 

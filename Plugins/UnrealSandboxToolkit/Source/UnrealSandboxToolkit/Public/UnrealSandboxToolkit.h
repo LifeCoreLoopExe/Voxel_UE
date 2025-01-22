@@ -1,4 +1,3 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
 
 #pragma once // Включает файл только один раз
 
@@ -7,7 +6,6 @@
 
 class FUnrealSandboxToolkitModule : public IModuleInterface { // Объявление класса FUnrealSandboxToolkitModule, наследующегося от IModuleInterface
 public:
-    /** IModuleInterface implementation */
     virtual void StartupModule() override; // Метод для запуска модуля
     virtual void ShutdownModule() override; // Метод для завершения работы модуля
 };

@@ -1,4 +1,3 @@
-// Copyright blackw 2015-2020
 
 #include "ObjectContainerCellWidget.h" // Включает заголовочный файл для ObjectContainerCellWidget
 #include "ContainerComponent.h" // Включает заголовочный файл для ContainerComponent

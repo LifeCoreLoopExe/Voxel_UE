@@ -1,4 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once // Включает файл только один раз
 
@@ -24,9 +23,7 @@ public:
     UPROPERTY(EditAnywhere, Category = "UnrealSandbox Toolkit") // Свойство, доступное для редактирования в редакторе
     TArray<TSubclassOf<ASandboxObject>> ObjectList; // Список объектов Sandbox
 
-    // UPROPERTY(EditAnywhere, Category = "UnrealSandbox Toolkit")
-    // TMap<uint64, FSandboxStaticData> StaticData;
-
+    
     UPROPERTY(EditAnywhere, Category = "UnrealSandbox Toolkit") // Свойство, доступное для редактирования в редакторе
     TMap<int32, TSubclassOf<ASandboxEffect>> Effects; // Карта эффектов Sandbox
 };
