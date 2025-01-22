@@ -1,22 +1,21 @@
+#pragma once // Указание компилятору включить этот файл только один раз
 
-#pragma once
+#include "Engine.h" // Подключение основного заголовочного файла движка Unreal Engine
+#include "GameFramework/Actor.h" // Подключение заголовочного файла для класса AActor
+#include "SandboxEffect.generated.h" // Генерация заголовочного файла для класса ASandboxEffect
 
-#include "Engine.h"
-#include "GameFramework/Actor.h"
-#include "SandboxEffect.generated.h"
-
-UCLASS(BlueprintType, Blueprintable)
-class UNREALSANDBOXTOOLKIT_API ASandboxEffect : public AActor {
-	GENERATED_BODY()
+UCLASS(BlueprintType, Blueprintable) // Определение класса ASandboxEffect, доступного в Blueprints
+class UNREALSANDBOXTOOLKIT_API ASandboxEffect : public AActor { // Определение класса ASandboxEffect, наследующего от AActor
+	GENERATED_BODY() // Генерация тела класса
 	
 public:	
-	ASandboxEffect();
+	ASandboxEffect(); // Конструктор класса ASandboxEffect
 
 protected:
 
-	virtual void BeginPlay() override;
+	virtual void BeginPlay() override; // Переопределение метода BeginPlay для инициализации при старте игры
 
 public:
 
-	
+	// Здесь могут быть добавлены публичные методы и свойства
 };
