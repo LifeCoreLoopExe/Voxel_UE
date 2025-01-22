@@ -1,20 +1,20 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// Авторские права Epic Games, Inc. Все права защищены.
 
-#include "UnrealSandboxToolkit.h"
+#include "UnrealSandboxToolkit.h" // Подключение заголовочного файла модуля UnrealSandboxToolkit
 
-#define LOCTEXT_NAMESPACE "FUnrealSandboxToolkitModule"
+#define LOCTEXT_NAMESPACE "FUnrealSandboxToolkitModule" // Определение пространства имен для локализации текста
 
 void FUnrealSandboxToolkitModule::StartupModule()
 {
-	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
+    // Этот код будет выполнен после загрузки вашего модуля в память; точное время выполнения указывается в .uplugin файле для каждого модуля
 }
 
 void FUnrealSandboxToolkitModule::ShutdownModule()
 {
-	// This function may be called during shutdown to clean up your module.  For modules that support dynamic reloading,
-	// we call this function before unloading the module.
+    // Эта функция может быть вызвана во время завершения работы для очистки вашего модуля. Для модулей, поддерживающих динамическую перезагрузку,
+    // мы вызываем эту функцию перед выгрузкой модуля.
 }
 
-#undef LOCTEXT_NAMESPACE
-	
-IMPLEMENT_MODULE(FUnrealSandboxToolkitModule, UnrealSandboxToolkit)
+#undef LOCTEXT_NAMESPACE // Отмена определения пространства имен для локализации текста
+
+IMPLEMENT_MODULE(FUnrealSandboxToolkitModule, UnrealSandboxToolkit) // Реализация модуля UnrealSandboxToolkit с использованием класса FUnrealSandboxToolkitModule
