@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Заполните информацию об авторских правах на странице описания настроек проекта.
 
 #pragma once
 
@@ -9,226 +9,259 @@
 #include "Perception/AIPerceptionComponent.h"
 #include "SandboxCharacter.generated.h"
 
-
+// Объявление класса компонента системы жизненных показателей
 class UVitalSystemComponent;
 
+// Перечисление для типов вида игрока
 UENUM(BlueprintType)
 enum class PlayerView : uint8 {
-	TOP_DOWN = 0		UMETA(DisplayName = "Top Down"),
-	THIRD_PERSON = 1	UMETA(DisplayName = "Third Person"),
-	FIRST_PERSON = 2	UMETA(DisplayName = "First Person")
+    TOP_DOWN = 0        UMETA(DisplayName = "Top Down"), // Вид сверху
+    THIRD_PERSON = 1    UMETA(DisplayName = "Third Person"), // Вид от третьего лица
+    FIRST_PERSON = 2    UMETA(DisplayName = "First Person") // Вид от первого лица
 };
 
-
-
+// Объявление интерфейса для песочницы
 UINTERFACE(MinimalAPI, Blueprintable)
 class USandboxCoreCharacter : public UInterface {
-	GENERATED_BODY()
+    GENERATED_BODY()
 };
 
+// Реализация интерфейса для песочницы
 class ISandboxCoreCharacter {
-	GENERATED_BODY()
+    GENERATED_BODY()
 
 public:
+    // Виртуальные функции для получения и установки различных параметров персонажа
+    virtual int GetSandboxTypeId() = 0;
+    virtual FString GetSandboxPlayerUid() = 0;
+    virtual float GetStaminaTickDelta() { return 0; }
+    virtual void OnStaminaExhausted() { }
+    virtual void Kill() { }
+    virtual bool IsDead() { return false; }
 
-	virtual int GetSandboxTypeId() = 0;
+    // Функция для получения параметра
+    FString GetParam(const FString& Param) { return (BaseParamMap.Contains(Param)) ? BaseParamMap[Param] : TEXT(""); }
 
-	virtual FString GetSandboxPlayerUid() = 0;
+    // Функция для установки параметра
+    void SetParam(const FString& Param, const FString& Val) { BaseParamMap.Add(Param, Val); OnSetSandboxBaseParam(); }
 
-	virtual float GetStaminaTickDelta() { return 0; }
+    // Виртуальная функция для обработки установки базового параметра
+    virtual void OnSetSandboxBaseParam() { }
 
-	virtual void OnStaminaExhausted() { }
-
-	virtual void Kill() { }
-
-	virtual bool IsDead() { return false; }
-
-	FString GetParam(const FString& Param) { return (BaseParamMap.Contains(Param)) ? BaseParamMap[Param] : TEXT(""); }
-
-	void SetParam(const FString& Param, const FString& Val) { BaseParamMap.Add(Param, Val); OnSetSandboxBaseParam(); }
-
-	virtual void OnSetSandboxBaseParam() { }
-
-	int GetState() { return State; }
+    // Функция для получения состояния
+    int GetState() { return State; }
 
 protected:
-
-	int State = 0;
+    // Состояние персонажа
+    int State = 0;
 
 private:
-
-	TMap<FString, FString> BaseParamMap;
-
+    // Карта базовых параметров
+    TMap<FString, FString> BaseParamMap;
 };
 
-
-
+// Объявление класса персонажа песочницы
 UCLASS()
 class UNREALSANDBOXTOOLKIT_API ASandboxCharacter : public ACharacter, public ISandboxCoreCharacter {
-	GENERATED_BODY()
+    GENERATED_BODY()
 
 public:
+    // Конструктор
+    ASandboxCharacter();
 
-	ASandboxCharacter();
+    // Функция, вызываемая при начале игры
+    virtual void BeginPlay() override;
 
-	virtual void BeginPlay() override;
-	
-	virtual void Tick( float DeltaSeconds ) override;
+    // Функция, вызываемая каждый кадр
+    virtual void Tick(float DeltaSeconds) override;
 
-	virtual void SetupPlayerInputComponent(class UInputComponent* InputComponent) override;
+    // Функция для настройки ввода игрока
+    virtual void SetupPlayerInputComponent(class UInputComponent* InputComponent) override;
 
-	//UPROPERTY(EditAnywhere, Category = "UnrealSandbox Core Character")
-	//int SandboxTypeId = 0;
+    // Идентификатор типа песочницы
+    UPROPERTY(EditAnywhere, Category = "UnrealSandbox Core Character")
+    int SandboxTypeId = 0;
 
-	UPROPERTY(EditAnywhere, Category = "UnrealSandbox Core Character")
-	int SandboxTypeId = 0;
+    // Компонент камеры следования
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+    class UCameraComponent* FollowCamera;
 
+    // Компонент камеры от первого лица
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+    class UCameraComponent* FirstPersonCamera;
 
+    // Компонент пружинного рычага камеры
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+    class USpringArmComponent* CameraBoom;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-	class UCameraComponent* FollowCamera;
+    // Функция для получения компонента пружинного рычага камеры
+    FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-	class UCameraComponent* FirstPersonCamera;
+    // Функция для инициализации вида сверху
+    UFUNCTION(BlueprintCallable, Category = "UnrealSandbox Character")
+    void InitTopDownView();
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-	class USpringArmComponent* CameraBoom;
+    // Функция для инициализации вида от третьего лица
+    UFUNCTION(BlueprintCallable, Category = "UnrealSandbox Character")
+    void InitThirdPersonView();
 
-	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
+    // Функция для инициализации вида от первого лица
+    UFUNCTION(BlueprintCallable, Category = "UnrealSandbox Character")
+    void InitFirstPersonView();
 
-	UFUNCTION(BlueprintCallable, Category = "UnrealSandbox Character")
-	void InitTopDownView();
+    // Функция для получения текущего вида игрока
+    PlayerView GetSandboxPlayerView();
 
-	UFUNCTION(BlueprintCallable, Category = "UnrealSandbox Character")
-	void InitThirdPersonView();
+    // Функция для установки вида игрока
+    void SetSandboxPlayerView(PlayerView SandboxView);
 
-	UFUNCTION(BlueprintCallable, Category = "UnrealSandbox Character")
-	void InitFirstPersonView();
+    // Начальный вид игрока
+    UPROPERTY(EditAnywhere, Category = "UnrealSandbox Character")
+    PlayerView InitialView = PlayerView::TOP_DOWN;
 
-	PlayerView GetSandboxPlayerView();
+    // Флаг для автоматического переключения вида
+    UPROPERTY(EditAnywhere, Category = "UnrealSandbox Character")
+    bool bEnableAutoSwitchView = true;
 
-	void SetSandboxPlayerView(PlayerView SandboxView);
+    // Функция для проверки, мертв ли персонаж
+    bool IsDead() { return bIsDead; }
 
-	UPROPERTY(EditAnywhere, Category = "UnrealSandbox Character")
-	PlayerView InitialView = PlayerView::TOP_DOWN;
+    // Функция для убийства персонажа
+    UFUNCTION(BlueprintCallable, Category = "UnrealSandbox Character")
+    void Kill();
 
-	UPROPERTY(EditAnywhere, Category = "UnrealSandbox Character")
-	bool bEnableAutoSwitchView = true;
+    // Функция для оживления персонажа
+    UFUNCTION(BlueprintCallable, Category = "UnrealSandbox Character")
+    void LiveUp();
 
-	bool IsDead() { return bIsDead; }
+    // Переопределение функции прыжка
+    void Jump() override;
 
-	UFUNCTION(BlueprintCallable, Category = "UnrealSandbox Character")
-	void Kill();
+    // Переопределение функции остановки прыжка
+    void StopJumping() override;
 
-	UFUNCTION(BlueprintCallable, Category = "UnrealSandbox Character")
-	void LiveUp();
+    // Максимальное увеличение
+    UPROPERTY(EditAnywhere, Category = "UnrealSandbox Character")
+    float MaxZoom;
 
-	void Jump() override;
+    // Максимальное увеличение для вида сверху
+    UPROPERTY(EditAnywhere, Category = "UnrealSandbox Character")
+    float MaxZoomTopDown;
 
-	void StopJumping() override;
+    // Минимальное увеличение
+    UPROPERTY(EditAnywhere, Category = "UnrealSandbox Character")
+    float MinZoom;
 
-	UPROPERTY(EditAnywhere, Category = "UnrealSandbox Character")
-	float MaxZoom;
+    // Шаг увеличения
+    UPROPERTY(EditAnywhere, Category = "UnrealSandbox Character")
+    float ZoomStep;
 
-	UPROPERTY(EditAnywhere, Category = "UnrealSandbox Character")
-	float MaxZoomTopDown;
+    // Скорость ходьбы
+    UPROPERTY(EditAnywhere, Category = "UnrealSandbox Character")
+    float WalkSpeed;
 
-	UPROPERTY(EditAnywhere, Category = "UnrealSandbox Character")
-	float MinZoom;
+    // Скорость бега
+    UPROPERTY(EditAnywhere, Category = "UnrealSandbox Character")
+    float RunSpeed;
 
-	UPROPERTY(EditAnywhere, Category = "UnrealSandbox Character")
-	float ZoomStep;
+    // Длина цели взаимодействия
+    UPROPERTY(EditAnywhere, Category = "UnrealSandbox Character")
+    float InteractionTargetLength;
 
-	UPROPERTY(EditAnywhere, Category = "UnrealSandbox Character")
-	float WalkSpeed;
+    // Порог скорости удара
+    UPROPERTY(EditAnywhere, Category = "UnrealSandbox Character")
+    float VelocityHitThreshold;
 
-	UPROPERTY(EditAnywhere, Category = "UnrealSandbox Character")
-	float RunSpeed;
+    // Фактор скорости удара
+    UPROPERTY(EditAnywhere, Category = "UnrealSandbox Character")
+    float VelocityHitFactor;
 
-	UPROPERTY(EditAnywhere, Category = "UnrealSandbox Character")
-	float InteractionTargetLength;
+    // Временная метка скорости удара
+    double VelocityHitTimestamp;
 
-	UPROPERTY(EditAnywhere, Category = "UnrealSandbox Character")
-	float VelocityHitThreshold;
+    // Функция для включения ускорения
+    void BoostOn();
 
-	UPROPERTY(EditAnywhere, Category = "UnrealSandbox Character")
-	float VelocityHitFactor;
+    // Функция для выключения ускорения
+    void BoostOff();
 
-	double VelocityHitTimestamp;
+    // Переопределение функции для получения идентификатора типа песочницы
+    int GetSandboxTypeId() override;
 
-	void BoostOn();
+    // Переопределение функции для получения идентификатора игрока песочницы
+    FString GetSandboxPlayerUid() override;
 
-	void BoostOff();
+    /*
+    // Событие для получения урона
+    UFUNCTION(BlueprintImplementableEvent, Category = "DmgSystem")
+    void TakeDamage(float DamageLevel);
+    */
 
-	int GetSandboxTypeId() override;
+    // Шаблонная функция для получения первого компонента по имени
+    template<class T>
+    T* GetFirstComponentByName(FString ComponentName) {
+        TArray<T*> Components;
+        GetComponents<T>(Components);
+        for (T* Component : Components) {
+            if (Component->GetName() == ComponentName)
+                return Component;
+        }
 
-	FString GetSandboxPlayerUid() override;
-
-	/*
-	UFUNCTION(BlueprintImplementableEvent, Category = "DmgSystem")
-	void TakeDamage(float DamageLevel);
-	*/
-
-	template<class T>
-	T* GetFirstComponentByName(FString ComponentName) {
-		TArray<T*> Components;
-		GetComponents<T>(Components);
-		for (T* Component : Components) {
-			if (Component->GetName() == ComponentName)
-				return Component;
-		}
-
-		return nullptr;
-	}
+        return nullptr;
+    }
 
 private:
-	PlayerView CurrentPlayerView;
+    // Текущий вид игрока
+    PlayerView CurrentPlayerView;
 
-	bool bIsDead = false;
+    // Флаг, указывающий, мертв ли персонаж
+    bool bIsDead = false;
 
-	FTransform InitialMeshTransform;
+    // Начальное преобразование меша
+    FTransform InitialMeshTransform;
 
-	UFUNCTION()
-	void OnHit(class UPrimitiveComponent* HitComp, class AActor* Actor, class UPrimitiveComponent* Other, FVector Impulse, const FHitResult & HitResult);
+    // Функция, вызываемая при попадании
+    UFUNCTION()
+    void OnHit(class UPrimitiveComponent* HitComp, class AActor* Actor, class UPrimitiveComponent* Other, FVector Impulse, const FHitResult & HitResult);
 
-	//UPROPERTY()
-	//UVitalSystemComponent* VitalSystemComponent;
+    // Компонент системы жизненных показателей
+    // UPROPERTY()
+    // UVitalSystemComponent* VitalSystemComponent;
 
 protected:
-	void ZoomIn();
+    // Функция для увеличения
+    void ZoomIn();
 
-	void ZoomOut();
+    // Функция для уменьшения
+    void ZoomOut();
 
-	virtual void OnDeath();
+    // Виртуальная функция для обработки смерти
+    virtual void OnDeath();
 
-	//void Test();
+    // Функция для движения вперед
+    void MoveForward(float Value);
 
-	/** Called for forwards/backward input */
-	void MoveForward(float Value);
+    // Функция для движения вправо
+    void MoveRight(float Value);
 
-	/** Called for side to side input */
-	void MoveRight(float Value);
+    // Функция для поворота на заданную скорость
+    void TurnAtRate(float Rate);
 
-	/**
-	* Called via input to turn at a given rate.
-	* @param Rate	This is a normalized rate, i.e. 1.0 means 100% of desired turn rate
-	*/
-	void TurnAtRate(float Rate);
+    // Функция для поворота вверх/вниз на заданную скорость
+    void LookUpAtRate(float Rate);
 
-	/**
-	* Called via input to turn look up/down at a given rate.
-	* @param Rate	This is a normalized rate, i.e. 1.0 means 100% of desired turn rate
-	*/
-	void LookUpAtRate(float Rate);
+    // Переопределение функции для добавления ввода рыскания контроллера
+    virtual void AddControllerYawInput(float Val) override;
 
-	virtual void AddControllerYawInput(float Val) override;
+    // Переопределение функции для добавления ввода тангажа контроллера
+    virtual void AddControllerPitchInput(float Val) override;
 
-	virtual void AddControllerPitchInput(float Val) override;
+    // Виртуальная функция для получения позиции камеры вида от третьего лица
+    virtual FVector GetThirdPersonViewCameraPos();
 
-	virtual FVector GetThirdPersonViewCameraPos();
+    // Виртуальная функция для получения поворота камеры вида сверху
+    virtual FRotator GetTopDownViewCameraRot();
 
-	virtual FRotator GetTopDownViewCameraRot();
-
-	virtual bool CanMove();
-	
+    // Виртуальная функция для проверки, может ли персонаж двигаться
+    virtual bool CanMove();
 };
