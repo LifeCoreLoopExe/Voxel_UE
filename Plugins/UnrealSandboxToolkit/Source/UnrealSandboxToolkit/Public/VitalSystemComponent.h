@@ -1,65 +1,64 @@
 // Copyright blackw 2015-2020
 
-#pragma once
+#pragma once // Защита от множественного включения этого заголовочного файла
 
-#include "Engine.h"
-#include "Components/ActorComponent.h"
-#include "VitalSystemComponent.generated.h"
+#include "Engine.h" // Подключение основного заголовочного файла движка Unreal Engine
+#include "Components/ActorComponent.h" // Подключение заголовочного файла для компонентов акторов
+#include "VitalSystemComponent.generated.h" // Генерация кода для этого заголовочного файла
 
-
-UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+// Класс компонента системы жизней, наследующий от UActorComponent
+UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent)) 
 class UNREALSANDBOXTOOLKIT_API UVitalSystemComponent : public UActorComponent {
-	GENERATED_BODY()
+	GENERATED_BODY() // Генерация тела класса
 
 public:
+	// Переменные для хранения здоровья и выносливости
+	UPROPERTY(Replicated, EditAnywhere, Category = "Sandbox Health") 
+	float Health; // Текущее здоровье
 
-	UPROPERTY(Replicated, EditAnywhere, Category = "Sandbox Health")
-	float Health;
+	UPROPERTY(Replicated, EditAnywhere, Category = "Sandbox Health") 
+	float MaxHealth; // Максимальное здоровье
 
-	UPROPERTY(Replicated, EditAnywhere, Category = "Sandbox Health")
-	float MaxHealth;
+	UPROPERTY(Replicated, EditAnywhere, Category = "Sandbox Health") 
+	float Stamina; // Текущая выносливость
 
-	UPROPERTY(Replicated, EditAnywhere, Category = "Sandbox Health")
-	float Stamina;
-
-	UPROPERTY(Replicated, EditAnywhere, Category = "Sandbox Health")
-	float MaxStamina;
+	UPROPERTY(Replicated, EditAnywhere, Category = "Sandbox Health") 
+	float MaxStamina; // Максимальная выносливость
 
 public:	
-	UVitalSystemComponent();
+	UVitalSystemComponent(); // Конструктор класса
 
-	virtual void BeginPlay() override;
+	virtual void BeginPlay() override; // Переопределение метода BeginPlay для инициализации при старте игры
 
-	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override; // Переопределение метода EndPlay для завершения работы компонента
 	
-	virtual void TickComponent( float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction ) override;
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override; 
+    // Переопределение метода TickComponent для обновления состояния компонента каждый кадр
 
 public:
+	// Методы для работы с здоровьем и выносливостью
+	float GetHealth(); // Метод для получения текущего значения здоровья
 
-	float GetHealth();
+	float GetMaxHealth(); // Метод для получения максимального значения здоровья
 
-	float GetMaxHealth();
+	void ChangeHealth(float Val); // Метод для изменения значения здоровья на заданное значение Val
 
-	void ChangeHealth(float Val);
+	void DamageFromFall(float Velocity); // Метод для расчета урона от падения на основе скорости падения
 
-	void DamageFromFall(float Velocity);
+	void Damage(float DamageVal); // Метод для нанесения урона на заданное значение DamageVal
 
-	void Damage(float DamageVal);
+	float GetStamina(); // Метод для получения текущего значения выносливости
 
-	float GetStamina();
+	float GetMaxStamina(); // Метод для получения максимального значения выносливости
 
-	float GetMaxStamina();
+	void ChangeStamina(float Val); // Метод для изменения значения выносливости на заданное значение Val
 
-	void ChangeStamina(float Val);
-
-	bool CheckStamina(float Val);
+	bool CheckStamina(float Val); // Метод проверки, достаточно ли выносливости для выполнения действия с величиной Val
 
 private:
+	bool IsOwnerAdmin(); // Метод проверки, является ли владелец администратором
 
-	bool IsOwnerAdmin();
+	FTimerHandle Timer; // Таймер для выполнения периодических действий
 
-	FTimerHandle Timer;
-
-	void PerformTimer();
-
+	void PerformTimer(); // Метод, выполняемый по таймеру
 };
