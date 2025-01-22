@@ -1,309 +1,303 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Заполните уведомление об авторских правах на странице "Описание" в настройках проекта.
 
 #include "SandboxEnvironment.h"
 #include <ctime>
 #include "SunPos.h"
 #include "Net/UnrealNetwork.h"
 
-
+// Конструктор класса ASandboxEnvironment
 ASandboxEnvironment::ASandboxEnvironment() {
-	bReplicates = true;
-	PrimaryActorTick.bCanEverTick = true;
-	TimeSpeed = 10.f;
-	bEnableDayNightCycle = true;
-	Lng = 27.55;
-	Lat = 53.91;
-	TimeZone = +3;
-	PlayerPos = FVector::ZeroVector;
-	InitialSkyIntensity = 0.1;
-	CaveSkyLightIntensity = 1;
-	CaveFogDensity = 0.5;
+    bReplicates = true; // Включает репликацию для этого актора
+    PrimaryActorTick.bCanEverTick = true; // Разрешает вызов функции Tick
+    TimeSpeed = 10.f; // Скорость времени
+    bEnableDayNightCycle = true; // Включает цикл дня и ночи
+    Lng = 27.55; // Долгота
+    Lat = 53.91; // Широта
+    TimeZone = +3; // Часовой пояс
+    PlayerPos = FVector::ZeroVector; // Позиция игрока
+    InitialSkyIntensity = 0.1; // Начальная интенсивность света неба
+    CaveSkyLightIntensity = 1; // Интенсивность света неба в пещере
+    CaveFogDensity = 0.5; // Плотность тумана в пещере
 }
 
+// Функция для получения интенсивности света неба
 float GetSkyLightIntensity(ASkyLight* SkyLight) {
-	if (SkyLight) {
-		USkyLightComponent* SkyLightComponent = SkyLight->GetLightComponent();
-		if (SkyLightComponent) {
-			return SkyLightComponent->Intensity;
-		}
-	}
-
-	return -1;
+    if (SkyLight) { // Если объект света неба существует
+        USkyLightComponent* SkyLightComponent = SkyLight->GetLightComponent(); // Получаем компонент света неба
+        if (SkyLightComponent) { // Если компонент существует
+            return SkyLightComponent->Intensity; // Возвращаем интенсивность света
+        }
+    }
+    return -1; // Возвращаем -1, если свет неба не найден
 }
 
+// Функция для получения интенсивности солнечного света
 float GetSunLightIntensity(ADirectionalLight* Light) {
-	if (Light) {
-		ULightComponent* LightComponent = Light->GetLightComponent();
-		if (LightComponent) {
-			return LightComponent->Intensity;
-		}
-	}
-
-	return 10.f;
+    if (Light) { // Если объект направленного света существует
+        ULightComponent* LightComponent = Light->GetLightComponent(); // Получаем компонент света
+        if (LightComponent) { // Если компонент существует
+            return LightComponent->Intensity; // Возвращаем интенсивность света
+        }
+    }
+    return 10.f; // Возвращаем 10.0, если направленный свет не найден
 }
 
-
+// Функция, вызываемая при начале игры
 void ASandboxEnvironment::BeginPlay() {
-	Super::BeginPlay();
+    Super::BeginPlay(); // Вызываем родительскую функцию BeginPlay
 
-	if (DirectionalLightSource){
-		DirectionalLightSource->SetActorRotation(FRotator(-90.0f, 0.0f, 0.0f));
-		InitialSunIntensity = GetSunLightIntensity(DirectionalLightSource);
-	}
+    if (DirectionalLightSource){ // Если источник направленного света существует
+        DirectionalLightSource->SetActorRotation(FRotator(-90.0f, 0.0f, 0.0f)); // Устанавливаем вращение источника света
+        InitialSunIntensity = GetSunLightIntensity(DirectionalLightSource); // Получаем начальную интенсивность солнечного света
+    }
 
-	if (CaveSphere) {
-		CaveSphere->GetStaticMeshComponent()->SetVisibility(bCaveMode);
-	}
+    if (CaveSphere) { // Если сфера пещеры существует
+        CaveSphere->GetStaticMeshComponent()->SetVisibility(bCaveMode); // Устанавливаем видимость сферы пещеры
+    }
 
-	if (GlobalFog) {
-		UExponentialHeightFogComponent* FogCmoponent = GlobalFog->GetComponent();
-		InitialFogDensity = FogCmoponent->FogDensity;
-	}
+    if (GlobalFog) { // Если глобальный туман существует
+        UExponentialHeightFogComponent* FogCmoponent = GlobalFog->GetComponent(); // Получаем компонент тумана
+        InitialFogDensity = FogCmoponent->FogDensity; // Получаем начальную плотность тумана
+    }
 
-	if (SkyLight) {
-		InitialSkyIntensity = GetSkyLightIntensity(SkyLight);
-	}
+    if (SkyLight) { // Если свет неба существует
+        InitialSkyIntensity = GetSkyLightIntensity(SkyLight); // Получаем начальную интенсивность света неба
+    }
 }
 
+// Функция, вызываемая каждый тик
 void ASandboxEnvironment::Tick( float DeltaTime ) {
-	Super::Tick( DeltaTime );
+    Super::Tick( DeltaTime ); // Вызываем родительскую функцию Tick
 
-	if(bEnableDayNightCycle) {
-		PerformDayNightCycle();
-	}
+    if(bEnableDayNightCycle) { // Если цикл дня и ночи включен
+        PerformDayNightCycle(); // Выполняем цикл дня и ночи
+    }
 }
 
+// Функция для установки интенсивности света неба
 void SetSkyLightIntensity(ASkyLight* SkyLight, float Intensity) {
-	if (SkyLight) {
-		USkyLightComponent* SkyLightComponent = SkyLight->GetLightComponent();
-		if (SkyLightComponent) {
-			SkyLightComponent->Intensity = Intensity;
-			//SkyLightComponent->RecaptureSky(); // ue4 only
-			SkyLightComponent->MarkRenderStateDirty();
-		}
-	}
+    if (SkyLight) { // Если объект света неба существует
+        USkyLightComponent* SkyLightComponent = SkyLight->GetLightComponent(); // Получаем компонент света неба
+        if (SkyLightComponent) { // Если компонент существует
+            SkyLightComponent->Intensity = Intensity; // Устанавливаем интенсивность света
+            SkyLightComponent->MarkRenderStateDirty(); // Помечаем состояние рендеринга как измененное
+        }
+    }
 }
 
+// Функция для расчета фактора высоты
 float ASandboxEnvironment::ClcHeightFactor() const {
-	return 1.f;
+    return 1.f; // Возвращаем 1.0
 }
 
+// Функция для выполнения цикла дня и ночи
 void ASandboxEnvironment::PerformDayNightCycle() {
-	UWorld* World = GetWorld();
-	AGameStateBase* GameState = World->GetGameState();
+    UWorld* World = GetWorld(); // Получаем мир
+    AGameStateBase* GameState = World->GetGameState(); // Получаем состояние игры
 
-	if (!GameState) {
-		return;
-	}
+    if (!GameState) { // Если состояние игры не существует
+        return; // Выходим из функции
+    }
 
-	float RealServerTime = GameState->GetServerWorldTimeSeconds();
-	TSandboxGameTime GameDayTime = ClcGameTimeOfDay(RealServerTime, false); // use UTC time
+    float RealServerTime = GameState->GetServerWorldTimeSeconds(); // Получаем реальное время сервера
+    TSandboxGameTime GameDayTime = ClcGameTimeOfDay(RealServerTime, false); // Рассчитываем игровое время дня (UTC)
 
-	//UE_LOG(LogTemp, Log, TEXT("%f"), RealServerTime);
-	//UE_LOG(LogTemp, Log, TEXT("%d : %d"), GameTimeOfDay.hours, GameTimeOfDay.minutes);
+    cTime Time; // Создаем структуру времени
+    Time.iYear = GameDayTime.year; // Устанавливаем год
+    Time.iMonth = GameDayTime.month; // Устанавливаем месяц
+    Time.iDay = GameDayTime.days; // Устанавливаем день
+    Time.dHours = GameDayTime.hours; // Устанавливаем часы
+    Time.dMinutes = GameDayTime.minutes; // Устанавливаем минуты
+    Time.dSeconds = GameDayTime.seconds; // Устанавливаем секунды
 
-	//FString ttt = GetCurrentTimeAsString();
-	//UE_LOG(LogTemp, Log, TEXT("%s"), *ttt);
+    cLocation GeoLoc; // Создаем структуру геолокации
+    GeoLoc.dLongitude = Lng; // Устанавливаем долготу
+    GeoLoc.dLatitude = Lat; // Устанавливаем широту
 
-	cTime Time;
-	Time.iYear = GameDayTime.year;
-	Time.iMonth = GameDayTime.month;
-	Time.iDay = GameDayTime.days;
+    cSunCoordinates SunPosition; // Создаем структуру координат солнца
+    sunpos(Time, GeoLoc, &SunPosition); // Рассчитываем позицию солнца
 
-	Time.dHours = GameDayTime.hours;
-	Time.dMinutes = GameDayTime.minutes;
-	Time.dSeconds = GameDayTime.seconds;
+    if (DirectionalLightSource) { // Если источник направленного света существует
+        DirectionalLightSource->SetActorRotation(FRotator(-(90 - SunPosition.dZenithAngle), SunPosition.dAzimuth, 0.0f)); // Устанавливаем вращение источника света
 
-	cLocation GeoLoc;
-	GeoLoc.dLongitude = Lng;
-	GeoLoc.dLatitude = Lat;
+        if (bCaveMode) { // Если режим пещеры включен
+            // Устанавливаем интенсивность света в пещере
+        } else { // Иначе
+            // Устанавливаем интенсивность света вне пещеры
+        }
 
-	cSunCoordinates SunPosition;
+        float H = 1 - SunPosition.dZenithAngle / 180; // Рассчитываем высоту солнца
+        bIsNight = H < 0.5; // Определяем, ночь ли сейчас
 
-	sunpos(Time, GeoLoc, &SunPosition);
+        float HeightFactor = ClcHeightFactor(); // Рассчитываем фактор высоты
 
-	if (DirectionalLightSource) {
-		DirectionalLightSource->SetActorRotation(FRotator(-(90 - SunPosition.dZenithAngle), SunPosition.dAzimuth, 0.0f));
+        if (CaveSunLightCurve) { // Если кривая интенсивности света в пещере существует
+            float SunIntensity = CaveSunLightCurve->GetFloatValue(HeightFactor); // Получаем интенсивность света из кривой
+            DirectionalLightSource->GetLightComponent()->SetIntensity(InitialSunIntensity * SunIntensity); // Устанавливаем интенсивность света
+        }
 
-		if (bCaveMode) {
-			//DirectionalLightSource->GetLightComponent()->SetIntensity(0.1);
-		} else {
-			//DirectionalLightSource->GetLightComponent()->SetIntensity(4);
-			//DirectionalLightSource->SetEnabled(true);
-		}
+        if (SkyLight) { // Если свет неба существует
+            float DayNightIntensity = InitialSkyIntensity; // Устанавливаем интенсивность света дня и ночи
+            const float Intensity = (DayNightIntensity * HeightFactor) + (CaveSkyLightIntensity * (1 - HeightFactor)); // Рассчитываем интенсивность света
+            if (bCaveMode) { // Если режим пещеры включен
+                // Устанавливаем интенсивность света в пещере
+            }
+        }
 
-		float H = 1 - SunPosition.dZenithAngle / 180;
-		bIsNight = H < 0.5;
-
-		float HeightFactor = ClcHeightFactor();
-
-		if (CaveSunLightCurve) {
-			float SunIntensity = CaveSunLightCurve->GetFloatValue(HeightFactor);
-			DirectionalLightSource->GetLightComponent()->SetIntensity(InitialSunIntensity * SunIntensity);
-		}
-
-
-		if (SkyLight) {
-			float DayNightIntensity = InitialSkyIntensity;
-
-			//const float CaveSkyLightIntensity = InitialSkyIntensity * CaveSkyLightRatio;
-			const float Intensity = (DayNightIntensity * HeightFactor) + (CaveSkyLightIntensity * (1 - HeightFactor));
-			//UE_LOG(LogTemp, Log, TEXT("H = %f, DayNightIntensity = %f, HeightFactor = %f ---> %f"), H, DayNightIntensity, HeightFactor, Intensity);
-			//UE_LOG(LogTemp, Log, TEXT("Intensity -> %f"), Intensity);
-
-			//SetSkyLightIntensity(SkyLight, Intensity);
-
-			if (bCaveMode) {
-				//SetSkyLightIntensity(SkyLight, 6);
-			}
-		}
-
-		if (GlobalFog) {
-			UExponentialHeightFogComponent* FogCmoponent = GlobalFog->GetComponent();
-			//FogCmoponent->SetFogInscatteringColor(FogColor);
-
-			if (GlobalFogDensityCurve) {
-				const float DayNightFogDensity = InitialFogDensity * GlobalFogDensityCurve->GetFloatValue(H);
-				const float FogDensity = (DayNightFogDensity * HeightFactor) + (CaveFogDensity * (1 - HeightFactor));
-				//UE_LOG(LogTemp, Log, TEXT("H = %f, GlobalFogDensityCurve = %f, HeightFactor = %f ---> %f"), H, GlobalFogDensityCurve->GetFloatValue(H), HeightFactor, FogDensity);
-				FogCmoponent->SetFogDensity(FogDensity);
-			}
-		}
-	}
+        if (GlobalFog) { // Если глобальный туман существует
+            UExponentialHeightFogComponent* FogCmoponent = GlobalFog->GetComponent(); // Получаем компонент тумана
+            if (GlobalFogDensityCurve) { // Если кривая плотности тумана существует
+                const float DayNightFogDensity = InitialFogDensity * GlobalFogDensityCurve->GetFloatValue(H); // Рассчитываем плотность тумана дня и ночи
+                const float FogDensity = (DayNightFogDensity * HeightFactor) + (CaveFogDensity * (1 - HeightFactor)); // Рассчитываем плотность тумана
+                FogCmoponent->SetFogDensity(FogDensity); // Устанавливаем плотность тумана
+            }
+        }
+    }
 }
 
+// Функция для расчета игрового времени
 float ASandboxEnvironment::ClcGameTime(float RealServerTime) {
-	return (RealServerTime + RealTimeOffset) * TimeSpeed;
+    return (RealServerTime + RealTimeOffset) * TimeSpeed; // Рассчитываем игровое время
 }
 
+// Функция для расчета локального игрового времени
 TSandboxGameTime ASandboxEnvironment::ClcLocalGameTime(float RealServerTime) {
-	long input_seconds = (long)(ClcGameTime(RealServerTime));
+    long input_seconds = (long)(ClcGameTime(RealServerTime)); // Рассчитываем входные секунды
 
-	const int cseconds_in_day = 86400;
-	const int cseconds_in_hour = 3600;
-	const int cseconds_in_minute = 60;
-	const int cseconds = 1;
+    const int cseconds_in_day = 86400; // Количество секунд в дне
+    const int cseconds_in_hour = 3600; // Количество секунд в часе
+    const int cseconds_in_minute = 60; // Количество секунд в минуте
+    const int cseconds = 1; // Количество секунд
 
-	TSandboxGameTime ret;
-	ret.days = input_seconds / cseconds_in_day;
-	ret.hours = (input_seconds % cseconds_in_day) / cseconds_in_hour;
-	ret.minutes = ((input_seconds % cseconds_in_day) % cseconds_in_hour) / cseconds_in_minute;
-	ret.seconds = (((input_seconds % cseconds_in_day) % cseconds_in_hour) % cseconds_in_minute) / cseconds;
+    TSandboxGameTime ret; // Создаем структуру игрового времени
+    ret.days = input_seconds / cseconds_in_day; // Рассчитываем дни
+    ret.hours = (input_seconds % cseconds_in_day) / cseconds_in_hour; // Рассчитываем часы
+    ret.minutes = ((input_seconds % cseconds_in_day) % cseconds_in_hour) / cseconds_in_minute; // Рассчитываем минуты
+    ret.seconds = (((input_seconds % cseconds_in_day) % cseconds_in_hour) % cseconds_in_minute) / cseconds; // Рассчитываем секунды
 
-	return ret;
+    return ret; // Возвращаем игровое время
 }
 
+// Функция для расчета игрового времени дня
 TSandboxGameTime ASandboxEnvironment::ClcGameTimeOfDay(float RealServerTime, bool bAccordingTimeZone) {
-	std::tm initial_ptm {};
-	initial_ptm.tm_hour = 12;
-	initial_ptm.tm_min = 0;
-	initial_ptm.tm_sec = 0;
-	initial_ptm.tm_mon = InitialMonth + 1;
-	initial_ptm.tm_mday = InitialDay;
-	initial_ptm.tm_year = InitialYear - 1900;
+    std::tm initial_ptm {}; // Создаем структуру времени
+    initial_ptm.tm_hour = 12; // Устанавливаем час
+    initial_ptm.tm_min = 0; // Устанавливаем минуты
+    initial_ptm.tm_sec = 0; // Устанавливаем секунды
+    initial_ptm.tm_mon = InitialMonth + 1; // Устанавливаем месяц
+    initial_ptm.tm_mday = InitialDay; // Устанавливаем день
+    initial_ptm.tm_year = InitialYear - 1900; // Устанавливаем год
 
-	time_t initial_time = std::mktime(&initial_ptm);
+    time_t initial_time = std::mktime(&initial_ptm); // Рассчитываем начальное время
 
-	//static const uint64 InitialOffset = 60 * 60 * 12; // always start game at 12:00
-	const uint64 InitialOffset = initial_time; 
-	const uint64 TimezoneOffset = bAccordingTimeZone ? 60 * 60 * TimeZone : 0;
-	const uint64 input_seconds = (int)ClcGameTime(RealServerTime) + InitialOffset + TimezoneOffset;
+    const uint64 InitialOffset = initial_time; // Устанавливаем начальный смещение
+    const uint64 TimezoneOffset = bAccordingTimeZone ? 60 * 60 * TimeZone : 0; // Рассчитываем смещение часового пояса
+    const uint64 input_seconds = (int)ClcGameTime(RealServerTime) + InitialOffset + TimezoneOffset; // Рассчитываем входные секунды
 
-	time_t rawtime = (time_t)input_seconds;
-	tm ptm;
+    time_t rawtime = (time_t)input_seconds; // Устанавливаем сырое время
+    tm ptm; // Создаем структуру времени
 
 #ifdef _MSC_VER
-	gmtime_s(&ptm, &rawtime);
+    gmtime_s(&ptm, &rawtime); // Рассчитываем время в формате UTC
 #else
-	ptm = *gmtime_r(&rawtime, &ptm);
+    ptm = *gmtime_r(&rawtime, &ptm); // Рассчитываем время в формате UTC
 #endif
 
-	TSandboxGameTime Time;
-	Time.hours = ptm.tm_hour;
-	Time.minutes = ptm.tm_min;
-	Time.seconds = ptm.tm_sec;
-	Time.days = ptm.tm_mday;
-	Time.month = ptm.tm_mon + 1;
-	Time.year = ptm.tm_year + 1900;
+    TSandboxGameTime Time; // Создаем структуру игрового времени
+    Time.hours = ptm.tm_hour; // Устанавливаем часы
+    Time.minutes = ptm.tm_min; // Устанавливаем минуты
+    Time.seconds = ptm.tm_sec; // Устанавливаем секунды
+    Time.days = ptm.tm_mday; // Устанавливаем день
+    Time.month = ptm.tm_mon + 1; // Устанавливаем месяц
+    Time.year = ptm.tm_year + 1900; // Устанавливаем год
 
-	return Time;
+    return Time; // Возвращаем игровое время
 }
 
+// Функция для расчета игрового времени дня
 TSandboxGameTime ASandboxEnvironment::ClcGameTimeOfDay() {
-	UWorld* World = GetWorld();
-	AGameStateBase* GameState = World->GetGameState();
+    UWorld* World = GetWorld(); // Получаем мир
+    AGameStateBase* GameState = World->GetGameState(); // Получаем состояние игры
 
-	if (!GameState) {
-		return TSandboxGameTime();
-	}
+    if (!GameState) { // Если состояние игры не существует
+        return TSandboxGameTime(); // Возвращаем пустое игровое время
+    }
 
-	return  ClcGameTimeOfDay(GameState->GetServerWorldTimeSeconds(), true);
+    return  ClcGameTimeOfDay(GameState->GetServerWorldTimeSeconds(), true); // Рассчитываем игровое время дня
 }
 
+// Функция для установки смещения времени
 void ASandboxEnvironment::SetTimeOffset(float Offset) {
-	RealTimeOffset = Offset;
+    RealTimeOffset = Offset; // Устанавливаем смещение времени
 }
 
+// Функция для получения нового смещения времени
 double ASandboxEnvironment::GetNewTimeOffset() {
-	AGameStateBase* GameState = GetWorld()->GetGameState();
+    AGameStateBase* GameState = GetWorld()->GetGameState(); // Получаем состояние игры
 
-	if (!GameState) {
-		return RealTimeOffset;
-	}
+    if (!GameState) { // Если состояние игры не существует
+        return RealTimeOffset; // Возвращаем текущее смещение времени
+    }
 
-	float RealServerTime = GameState->GetServerWorldTimeSeconds();
-	return RealTimeOffset + RealServerTime;
+    float RealServerTime = GameState->GetServerWorldTimeSeconds(); // Получаем реальное время сервера
+    return RealTimeOffset + RealServerTime; // Возвращаем новое смещение времени
 }
 
+// Функция для обновления позиции игрока
 void ASandboxEnvironment::UpdatePlayerPosition(FVector Pos, APlayerController* Controller) {
-	PlayerPos = Pos;
+    PlayerPos = Pos; // Устанавливаем позицию игрока
 
-	if (CaveSphere) {
-		CaveSphere->SetActorLocation(Pos);
-	}
+    if (CaveSphere) { // Если сфера пещеры существует
+        CaveSphere->SetActorLocation(Pos); // Устанавливаем позицию сферы пещеры
+    }
 
-	if (GlobalFog) {
-		GlobalFog->SetActorLocation(Pos);
-	}
+    if (GlobalFog) { // Если глобальный туман существует
+        GlobalFog->SetActorLocation(Pos); // Устанавливаем позицию тумана
+    }
 }
 
+// Функция для проверки, включен ли режим пещеры
 bool ASandboxEnvironment::IsCaveMode() {
-	return bCaveMode;
+    return bCaveMode; // Возвращаем состояние режима пещеры
 }
 
+// Функция для установки режима пещеры
 void ASandboxEnvironment::SetCaveMode(bool bCaveModeEnabled) {
-	if (bCaveMode == bCaveModeEnabled) {
-		return;
-	}
+    if (bCaveMode == bCaveModeEnabled) { // Если режим пещеры не изменился
+        return; // Выходим из функции
+    }
 
-	if (CaveSphere) {
-		CaveSphere->GetStaticMeshComponent()->SetVisibility(bCaveModeEnabled);
-	}
+    if (CaveSphere) { // Если сфера пещеры существует
+        CaveSphere->GetStaticMeshComponent()->SetVisibility(bCaveModeEnabled); // Устанавливаем видимость сферы пещеры
+    }
 
-	bCaveMode = bCaveModeEnabled;
+    bCaveMode = bCaveModeEnabled; // Устанавливаем режим пещеры
 }
 
+// Функция для проверки, ночь ли сейчас
 bool ASandboxEnvironment::IsNight() const {
-	return bIsNight;
+    return bIsNight; // Возвращаем состояние ночи
 }
 
+// Функция для получения текущего времени в виде строки
 FString ASandboxEnvironment::GetCurrentTimeAsString() {
-	UWorld* World = GetWorld();
-	AGameStateBase* GameState = World->GetGameState();
+    UWorld* World = GetWorld(); // Получаем мир
+    AGameStateBase* GameState = World->GetGameState(); // Получаем состояние игры
 
-	if (!GameState) {
-		return TEXT("");
-	}
+    if (!GameState) { // Если состояние игры не существует
+        return TEXT(""); // Возвращаем пустую строку
+    }
 
-	float RealServerTime = GameState->GetServerWorldTimeSeconds();
-	TSandboxGameTime CurrentTime = ClcGameTimeOfDay(RealServerTime, true);
+    float RealServerTime = GameState->GetServerWorldTimeSeconds(); // Получаем реальное время сервера
+    TSandboxGameTime CurrentTime = ClcGameTimeOfDay(RealServerTime, true); // Рассчитываем текущее игровое время
 
-	FString Str = FString::Printf(TEXT("%02d:%02d"), CurrentTime.hours, CurrentTime.minutes);
-	return Str;
+    FString Str = FString::Printf(TEXT("%02d:%02d"), CurrentTime.hours, CurrentTime.minutes); // Форматируем время в строку
+    return Str; // Возвращаем строку времени
 }
 
+// Функция для получения реплицируемых свойств
 void ASandboxEnvironment::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	DOREPLIFETIME(ASandboxEnvironment, RealTimeOffset);
-	DOREPLIFETIME(ASandboxEnvironment, TimeSpeed);
+    Super::GetLifetimeReplicatedProps(OutLifetimeProps); // Вызываем родительскую функцию
+    DOREPLIFETIME(ASandboxEnvironment, RealTimeOffset); // Реплицируем смещение времени
+    DOREPLIFETIME(ASandboxEnvironment, TimeSpeed); // Реплицируем скорость времени
 }
