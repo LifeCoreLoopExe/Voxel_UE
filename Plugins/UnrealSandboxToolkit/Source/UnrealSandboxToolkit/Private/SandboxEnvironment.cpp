@@ -105,11 +105,7 @@ void ASandboxEnvironment::PerformDayNightCycle() {
     float RealServerTime = GameState->GetServerWorldTimeSeconds(); // Получение времени сервера
     TSandboxGameTime GameDayTime = ClcGameTimeOfDay(RealServerTime, false); // Вычисление игрового времени дня (использовать время UTC)
 
-    //UE_LOG(LogTemp, Log, TEXT("%f"), RealServerTime);
-    //UE_LOG(LogTemp, Log, TEXT("%d : %d"), GameTimeOfDay.hours, GameTimeOfDay.minutes);
-
-    //FString ttt = GetCurrentTimeAsString();
-    //UE_LOG(LogTemp, Log, TEXT("%s"), *ttt);
+   
 
     cTime Time;
     Time.iYear = GameDayTime.year;
@@ -132,10 +128,9 @@ void ASandboxEnvironment::PerformDayNightCycle() {
         DirectionalLightSource->SetActorRotation(FRotator(-(90 - SunPosition.dZenithAngle), SunPosition.dAzimuth, 0.0f)); // Установка поворота источника света
 
         if (bCaveMode) {
-            //DirectionalLightSource->GetLightComponent()->SetIntensity(0.1);
+    
         } else {
-            //DirectionalLightSource->GetLightComponent()->SetIntensity(4);
-            //DirectionalLightSource->SetEnabled(true);
+            
         }
 
         float H = 1 - SunPosition.dZenithAngle / 180;
@@ -150,27 +145,16 @@ void ASandboxEnvironment::PerformDayNightCycle() {
 
         if (SkyLight) {
             float DayNightIntensity = InitialSkyIntensity;
-
-            //const float CaveSkyLightIntensity = InitialSkyIntensity * CaveSkyLightRatio;
             const float Intensity = (DayNightIntensity * HeightFactor) + (CaveSkyLightIntensity * (1 - HeightFactor));
-            //UE_LOG(LogTemp, Log, TEXT("H = %f, DayNightIntensity = %f, HeightFactor = %f ---> %f"), H, DayNightIntensity, HeightFactor, Intensity);
-            //UE_LOG(LogTemp, Log, TEXT("Intensity -> %f"), Intensity);
-
-            //SetSkyLightIntensity(SkyLight, Intensity);
-
             if (bCaveMode) {
-                //SetSkyLightIntensity(SkyLight, 6);
             }
         }
 
         if (GlobalFog) {
             UExponentialHeightFogComponent* FogCmoponent = GlobalFog->GetComponent();
-            //FogCmoponent->SetFogInscatteringColor(FogColor);
-
             if (GlobalFogDensityCurve) {
                 const float DayNightFogDensity = InitialFogDensity * GlobalFogDensityCurve->GetFloatValue(H);
                 const float FogDensity = (DayNightFogDensity * HeightFactor) + (CaveFogDensity * (1 - HeightFactor));
-                //UE_LOG(LogTemp, Log, TEXT("H = %f, GlobalFogDensityCurve = %f, HeightFactor = %f ---> %f"), H, GlobalFogDensityCurve->GetFloatValue(H), HeightFactor, FogDensity);
                 FogCmoponent->SetFogDensity(FogDensity); // Установка плотности тумана
             }
         }
@@ -211,8 +195,6 @@ TSandboxGameTime ASandboxEnvironment::ClcGameTimeOfDay(float RealServerTime, boo
     initial_ptm.tm_year = InitialYear - 1900;
 
     time_t initial_time = std::mktime(&initial_ptm);
-
-    //static const uint64 InitialOffset = 60 * 60 * 12; // всегда начинать игру в 12:00
     const uint64 InitialOffset = initial_time;
     const uint64 TimezoneOffset = bAccordingTimeZone ? 60 * 60 * TimeZone : 0;
     const uint64 input_seconds = (int)ClcGameTime(RealServerTime) + InitialOffset + TimezoneOffset;

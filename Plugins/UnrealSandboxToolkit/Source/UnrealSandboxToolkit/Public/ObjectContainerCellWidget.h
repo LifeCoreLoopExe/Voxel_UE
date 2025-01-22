@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once // Защита от множественного включения этого заголовочного файла
 
 #include "Runtime/UMG/Public/UMG.h" // Подключение заголовочного файла для UMG (Unreal Motion Graphics)
@@ -19,10 +17,6 @@ enum class EContainerCellBinding : uint8 {
 	Player = 0 UMETA(DisplayName = "Player"), // Привязка к игроку
 	ExternalObject = 1 UMETA(DisplayName = "External Object"), // Привязка к внешнему объекту
 };
-
-/**
- * Класс виджета ячейки контейнера объектов в инвентаре
- */
 UCLASS() 
 class UNREALSANDBOXTOOLKIT_API USandboxObjectContainerCellWidget : public UUserWidget { 
 	GENERATED_BODY() // Генерация тела класса

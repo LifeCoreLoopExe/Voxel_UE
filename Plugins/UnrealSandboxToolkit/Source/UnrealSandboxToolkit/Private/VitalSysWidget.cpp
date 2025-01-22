@@ -1,5 +1,3 @@
-// Copyright blackw 2015-2020
-
 #include "VitalSysWidget.h" // Подключение заголовочного файла для виджета VitalSys
 #include "VitalSystemComponent.h" // Подключение заголовочного файла для компонента VitalSystem
 #include "SandboxCharacter.h" // Подключение заголовочного файла для персонажа Sandbox

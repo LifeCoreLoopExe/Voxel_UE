@@ -26,14 +26,10 @@ static const FString DefaultSandboxObjectName = FString(TEXT("Sandbox object"));
 void ASandboxObject::BeginPlay() {
     Super::BeginPlay(); // Вызов функции BeginPlay родительского класса
     SandboxRootMesh->OnComponentSleep.AddDynamic(this, &ASandboxObject::OnSleep); // Добавление обработчика события сна компонента
-    //SandboxRootMesh->OnTakeRadialDamage.AddDynamic(this, &ASandboxObject::OnTakeRadialDamage);
-    //SandboxRootMesh->OnTakeAnyDamage.AddDynamic(this, &ASandboxObject::OnTakeRadialDamage);
-    //SandboxRootMesh->OnTakeAnyDamage.AddDynamic(this, &ASandboxObject::OnTakeRadialDamage);
 }
 
 // Обработка события сна компонента
 void ASandboxObject::OnSleep(UPrimitiveComponent* SleepingComponent, FName BoneName) {
-    //UE_LOG(LogTemp, Warning, TEXT("OnSleep"));
     SandboxRootMesh->SetSimulatePhysics(false); // Отключение симуляции физики
 }
 

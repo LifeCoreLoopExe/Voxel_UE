@@ -50,10 +50,6 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Sandbox")
 	UCurveFloat* HeightCurve; // Кривая высоты (для управления высотой)
-
-	//UPROPERTY(EditAnywhere, Category = "Sandbox Cave")
-	//float CaveSkyLightRatio; // Соотношение небесного света в пещере (закомментировано)
-
 	UPROPERTY(EditAnywhere, Category = "Sandbox Cave")
 	float CaveSkyLightIntensity; // Интенсивность небесного света в пещере
 
@@ -63,20 +59,12 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Sandbox")
 	UCurveFloat* GlobalFogDensityCurve; // Кривая плотности глобального тумана
 
-	//UPROPERTY(EditAnywhere, Category = "Sandbox")
-	//UCurveFloat* GlobalFogOpacityCurve; // Кривая непрозрачности глобального тумана (закомментировано)
-
 	UPROPERTY(EditAnywhere, Replicated, Category = "Sandbox") 
 	float TimeSpeed; // Скорость времени в игре
 
 	UPROPERTY(EditAnywhere, Category = "Sandbox Cave")
 	float CaveFogDensity; // Плотность тумана в пещере
 
-	//UPROPERTY(EditAnywhere, Category = "Sandbox Cave")
-	//float CaveFogOpacity; // Непрозрачность тумана в пещере (закомментировано)
-
-	//UPROPERTY(EditAnywhere, Category = "Sandbox Cave")
-	//FLinearColor CaveFogInscatteringColor; // Цвет рассеивания тумана в пещере (закомментировано)
 
 	UPROPERTY(EditAnywhere, Category = "Sandbox DayNight cycle")
 	bool bEnableDayNightCycle; // Флаг включения цикла день-ночь
@@ -89,9 +77,6 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Sandbox DayNight cycle")
 	int InitialDay = 10; // Начальный день
-
-	//UPROPERTY(EditAnywhere, Category = "Sandbox DayNight cycle")
-	//int InitialHour = 12; // Начальный час (закомментировано)
 
 	UPROPERTY(EditAnywhere, Category = "Sandbox DayNight cycle")
 	int TimeZone; // Часовой пояс

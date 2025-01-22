@@ -28,17 +28,7 @@ void UContainerComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction); // Вызвать функцию TickComponent родительского класса
 }
 
-/*
-// Проверка, является ли владелец контейнера администратором (закомментировано)
-bool UContainerComponent::IsOwnerAdmin() {
-    ASandboxCharacter* SandboxCharacter = Cast<ASandboxCharacter>(GetOwner()); // Получить владельца компонента
-    if (SandboxCharacter) {
-        return SandboxCharacter->bIsAdmin; // Вернуть, является ли владелец администратором
-    }
 
-    return true; // По умолчанию вернуть true, если владелец не найден
-}
-*/
 
 // Проверка, пуст ли контейнер
 bool UContainerComponent::IsEmpty() const {
@@ -145,26 +135,6 @@ const FContainerStack* UContainerComponent::GetSlot(const int Slot) const {
 
     return &Content[Slot]; // Вернуть указатель на стек
 }
-
-/*
-// Получить объект, связанный со слотом (закомментировано)
-ASandboxObject* UContainerComponent::GetAvailableSlotObject(const int Slot) {
-    if (!Content.IsValidIndex(Slot)) { // Если слот недействителен
-        return nullptr;
-    }
-
-    FContainerStack* Stack = &Content[Slot];
-    if (Stack->Amount > 0) { // Если в стеке есть предметы
-        TSubclassOf<ASandboxObject> ObjectClass = Stack->ObjectClass; // Получить класс объекта
-        if (ObjectClass) {
-            return (ASandboxObject*)(ObjectClass->GetDefaultObject()); // Вернуть объект по умолчанию
-        }
-    }
-
-    return nullptr;
-}
-*/
-
 // Уменьшить количество объектов в слоте контейнера
 bool UContainerComponent::DecreaseObjectsInContainer(int Slot, int Num) {
     FContainerStack* Stack = GetSlot(Slot); // Получить указатель на стек

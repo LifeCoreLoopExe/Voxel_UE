@@ -26,9 +26,6 @@ public:
 	UPROPERTY(EditAnywhere, Category = "UnrealSandbox Toolkit") 
 	TArray<TSubclassOf<ASandboxObject>> ObjectList; // Список классов объектов песочницы
 
-	//UPROPERTY(EditAnywhere, Category = "UnrealSandbox Toolkit")
-	//TMap<uint64, FSandboxStaticData> StaticData; // Карта статических данных объектов (закомментировано)
-
 	UPROPERTY(EditAnywhere, Category = "UnrealSandbox Toolkit") 
 	TMap<int32, TSubclassOf<ASandboxEffect>> Effects; // Карта эффектов с их идентификаторами
 };

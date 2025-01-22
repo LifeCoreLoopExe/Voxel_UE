@@ -1,8 +1,8 @@
 // Заполните свое уведомление об авторских правах на странице "Описание" в настройках проекта.
 
 #include "SandboxCharacter.h"
-//#include "SandboxPlayerController.h"
-//#include "VitalSystemComponent.h"
+#include "SandboxPlayerController.h"
+#include "VitalSystemComponent.h"
 
 // Конструктор для ASandboxCharacter
 ASandboxCharacter::ASandboxCharacter() {
@@ -70,16 +70,7 @@ void ASandboxCharacter::BeginPlay() {
         InitFirstPersonView(); // Инициализация вида от первого лица
     }
 
-    /*
-    TArray<UVitalSystemComponent*> Components;
-    GetComponents<UVitalSystemComponent>(Components);
 
-    for (UVitalSystemComponent* VitalSysCmp : Components) {
-        VitalSystemComponent = VitalSysCmp;
-        break;
-    }
-    */
-}
 
 // Вызывается каждый кадр
 void ASandboxCharacter::Tick(float DeltaTime) {
@@ -107,8 +98,6 @@ void ASandboxCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerI
     PlayerInputComponent->BindAxis("Move Forward / Backward", this, &ASandboxCharacter::MoveForward); // Привязка оси движения вперед/назад
     PlayerInputComponent->BindAxis("Move Right / Left", this, &ASandboxCharacter::MoveRight); // Привязка оси движения вправо/влево
 
-    //InputComponent->BindAction("Test", IE_Pressed, this, &ASandboxCharacter::Test);
-
     // У нас есть 2 версии привязок поворота для обработки разных типов устройств
     // "turn" обрабатывает устройства, предоставляющие абсолютную дельту, такие как мышь.
     // "turnrate" предназначен для устройств, которые мы выбираем для обработки как скорость изменения, такие как аналоговый джойстик
@@ -120,10 +109,6 @@ void ASandboxCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerI
 
 // Проверка, может ли персонаж двигаться
 bool ASandboxCharacter::CanMove() {
-    //ASandboxPlayerController* C = Cast<ASandboxPlayerController>(GetController());
-    //if (!C || C->IsGameInputBlocked()) {
-    //	return false;
-    //}
 
     return true; // По умолчанию вернуть true
 }
@@ -134,19 +119,7 @@ void ASandboxCharacter::BoostOn() {
         return;
     }
 
-    /*
-    TArray<UVitalSystemComponent*> Components;
-    GetComponents<UVitalSystemComponent>(Components);
-    if (Components.Num() > 0) {
-        UVitalSystemComponent* Vs = Components[0];
-        if (Vs->CanBoost()) {
-            GetCharacterMovement()->MaxWalkSpeed = RunSpeed;
-            return;
-        }
-    } else {
-        GetCharacterMovement()->MaxWalkSpeed = RunSpeed;
-    }
-    */
+
 }
 
 // Отключение ускорения
@@ -206,7 +179,7 @@ void ASandboxCharacter::ZoomIn() {
         }
     }
 
-    //UE_LOG(LogVt, Log, TEXT("ZoomIn: %f"), GetCameraBoom()->TargetArmLength);
+  
 }
 
 // Уменьшение
@@ -230,7 +203,7 @@ void ASandboxCharacter::ZoomOut() {
         GetCameraBoom()->TargetArmLength += ZoomStep; // Увеличение длины руки камеры
     }
 
-    //UE_LOG(LogVt, Log, TEXT("ZoomOut: %f"), GetCameraBoom()->TargetArmLength);
+  
 }
 
 // Получение позиции камеры для вида от третьего лица
@@ -271,12 +244,7 @@ void ASandboxCharacter::InitTopDownView() {
 
     CurrentPlayerView = PlayerView::TOP_DOWN; // Установка текущего вида как вид сверху
 
-    /*
-    ASandboxPlayerController* C = Cast<ASandboxPlayerController>(GetController());
-    if (C != NULL) {
-        C->ShowMouseCursor(true);
-    }
-    */
+  
 }
 
 // Инициализация вида от третьего лица
@@ -300,12 +268,7 @@ void ASandboxCharacter::InitThirdPersonView() {
 
     CurrentPlayerView = PlayerView::THIRD_PERSON; // Установка текущего вида как вид от третьего лица
 
-    /*
-    ASandboxPlayerController* Controller = Cast<ASandboxPlayerController>(GetController());
-    if (Controller) {
-        Controller->ShowMouseCursor(false);
-    }
-    */
+    
 }
 
 // Инициализация вида от первого лица
@@ -316,8 +279,7 @@ void ASandboxCharacter::InitFirstPersonView() {
 
     // Настройка движения персонажа
     GetCharacterMovement()->bOrientRotationToMovement = false; // Персонаж движется в направлении ввода
-    //GetCharacterMovement()->JumpZVelocity = 600.f;
-    //GetCharacterMovement()->AirControl = 0.2f;
+  
 
     FirstPersonCamera->Activate(); // Активация камеры от первого лица
     FollowCamera->Deactivate(); // Деактивация следующей камеры
@@ -326,12 +288,7 @@ void ASandboxCharacter::InitFirstPersonView() {
 
     CurrentPlayerView = PlayerView::FIRST_PERSON; // Установка текущего вида как вид от первого лица
 
-    /*
-    ASandboxPlayerController* Controller = Cast<ASandboxPlayerController>(GetController());
-    if (Controller) {
-        Controller->ShowMouseCursor(false);
-    }
-    */
+ 
 }
 
 // Добавление ввода контроллера по рысканью
@@ -340,10 +297,7 @@ void ASandboxCharacter::AddControllerYawInput(float Val) {
         return;
     }
 
-    //if (Controller->IsGameInputBlocked() && CurrentPlayerView != PlayerView::THIRD_PERSON) {
-        //return;
-    //}
-
+   
     if (CurrentPlayerView == PlayerView::TOP_DOWN) { // Если текущий вид - вид сверху
         return;
     }
@@ -358,12 +312,7 @@ void ASandboxCharacter::AddControllerPitchInput(float Val) {
         return;
     }
 
-    /*
-    ASandboxPlayerController* Controller = Cast<ASandboxPlayerController>(GetController());
-    if (Controller->IsGameInputBlocked() && CurrentPlayerView != PlayerView::THIRD_PERSON) {
-        //return;
-    }
-    */
+   
 
     if (CurrentPlayerView == PlayerView::TOP_DOWN){ // Если текущий вид - вид сверху
         return;
@@ -382,8 +331,7 @@ void ASandboxCharacter::TurnAtRate(float Rate) {
         return;
     }
 
-    // calculate delta for this frame from the rate information
-    //AddControllerYawInput(Rate * BaseTurnRate * GetWorld()->GetDeltaSeconds());
+
 }
 
 // Поднятие взгляда с определенной скоростью
@@ -396,8 +344,7 @@ void ASandboxCharacter::LookUpAtRate(float Rate) {
         return;
     }
 
-    // calculate delta for this frame from the rate information
-    //AddControllerPitchInput(Rate * BaseLookUpRate * GetWorld()->GetDeltaSeconds());
+  
 }
 
 // Движение вперед
@@ -471,16 +418,6 @@ void ASandboxCharacter::SetSandboxPlayerView(PlayerView SandboxView) {
     CurrentPlayerView = SandboxView; // Установка текущего вида
 }
 
-/*
-void ASandboxCharacter::Test() {
-    if(!IsDead()) {
-        Kill();
-    } else {
-        LiveUp();
-    }
-}
-*/
-
 // Обработка смерти персонажа
 void ASandboxCharacter::OnDeath() {
     GetMesh()->SetSimulatePhysics(true); // Включение симуляции физики для сетки
@@ -523,20 +460,5 @@ FString ASandboxCharacter::GetSandboxPlayerUid() {
 
 // Обработка удара
 void ASandboxCharacter::OnHit(class UPrimitiveComponent* HitComp, class AActor* Actor, class UPrimitiveComponent* Other, FVector Impulse, const FHitResult & HitResult) {
-    /*
-    float HitVelocity = GetCapsuleComponent()->GetComponentVelocity().Size();
-    if (VitalSystemComponent != nullptr) {
-        if (HitVelocity > VelocityHitThreshold) {
-            const double Timestamp = FPlatformTime::Seconds();
-            const double D = Timestamp - VelocityHitTimestamp;
-            if (D > 0.5) {
-                UE_LOG(LogTemp, Log, TEXT("HitVelocity -> %f"), HitVelocity);
-                VelocityHitTimestamp = Timestamp;
-                const float Damage = (HitVelocity - VelocityHitThreshold) * VelocityHitFactor;
-                VitalSystemComponent->Damage(Damage);
-            }
-
-        }
-    }
-    */
+   
 }

@@ -1,5 +1,3 @@
-// Этот файл доступен в электронном виде по адресу http://www.psa.es/sdg/sunpos.htm
-
 #ifndef __SUNPOS_H
 #define __SUNPOS_H
 
@@ -9,7 +7,6 @@
 #define rad (pi/180)
 #define dEarthMeanRadius 6371.01 // В км
 #define dAstronomicalUnit 149597890 // В км
-
 struct cTime {
     int iYear;
     int iMonth;
@@ -18,7 +15,6 @@ struct cTime {
     double dMinutes;
     double dSeconds;
 };
-
 struct cLocation {
     double dLongitude;
     double dLatitude;
@@ -28,7 +24,5 @@ struct cSunCoordinates {
     double dZenithAngle;
     double dAzimuth;
 };
-
 void sunpos(cTime udtTime, cLocation udtLocation, cSunCoordinates *udtSunCoordinates);
-
 #endif

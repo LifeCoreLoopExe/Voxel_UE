@@ -1,8 +1,5 @@
-// Этот файл доступен в электронном виде по адресу http://www.psa.es/sdg/sunpos.htm
-
 #include "SunPos.h"
 #include <math.h>
-
 void sunpos(cTime udtTime, cLocation udtLocation, cSunCoordinates *udtSunCoordinates) {
     // Основные переменные
     double dElapsedJulianDays;
@@ -44,7 +41,6 @@ void sunpos(cTime udtTime, cLocation udtLocation, cSunCoordinates *udtSunCoordin
         dEclipticLongitude = dMeanLongitude + 0.03341607 * sin(dMeanAnomaly) + 0.00034894 * sin(2 * dMeanAnomaly) - 0.0001134 - 0.0000203 * sin(dOmega);
         dEclipticObliquity = 0.4090928 - 6.2140e-9 * dElapsedJulianDays + 0.0000396 * cos(dOmega);
     }
-
     // Вычисление небесных координат (прямое восхождение и склонение) в радианах
     // но без ограничения угла меньше 2*Pi (т.е. результат может быть больше 2*Pi)
     {
@@ -56,7 +52,6 @@ void sunpos(cTime udtTime, cLocation udtLocation, cSunCoordinates *udtSunCoordin
         if (dRightAscension < 0.0) dRightAscension = dRightAscension + 2 * M_PI;
         dDeclination = asin(sin(dEclipticObliquity) * dSin_EclipticLongitude);
     }
-
     // Вычисление местных координат (азимут и зенитный угол) в градусах
     {
         double dGreenwichMeanSiderealTime;

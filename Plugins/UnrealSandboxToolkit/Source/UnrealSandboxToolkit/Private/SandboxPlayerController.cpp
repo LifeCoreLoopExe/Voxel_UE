@@ -9,7 +9,6 @@
 
 // Конструктор для ASandboxPlayerController
 ASandboxPlayerController::ASandboxPlayerController() {
-    // bShowMouseCursor = true;
     DefaultMouseCursor = EMouseCursor::Default;
     CurrentInventorySlot = -1;
     bIsGameInputBlocked = false;
@@ -49,11 +48,6 @@ void ASandboxPlayerController::SetupInputComponent() {
 
     InputComponent->BindAction("AltAction", IE_Pressed, this, &ASandboxPlayerController::OnAltActionPressedInternal);
     InputComponent->BindAction("AltAction", IE_Released, this, &ASandboxPlayerController::OnAltActionReleasedInternal);
-
-    // Поддержка сенсорных устройств
-    // InputComponent->BindTouch(EInputEvent::IE_Pressed, this, &AUE4VoxelTerrainPlayerController::MoveToTouchLocation);
-    // InputComponent->BindTouch(EInputEvent::IE_Repeat, this, &AUE4VoxelTerrainPlayerController::MoveToTouchLocation);
-
     InputComponent->BindAction("ToggleView", IE_Pressed, this, &ASandboxPlayerController::ToggleView);
 }
 
@@ -191,27 +185,19 @@ void ASandboxPlayerController::OnPossess(APawn* NewPawn) {
     if (SandboxCharacter) {
         SandboxCharacter->EnableInput(this);
         if (SandboxCharacter->GetSandboxPlayerView() == PlayerView::TOP_DOWN) {
-            // bShowMouseCursor = true;
         } else {
-            // bShowMouseCursor = false;
         }
     }
-
-    // bShowMouseCursor = false;
 }
 
 // Блокировка игрового ввода
 void ASandboxPlayerController::BlockGameInput() {
-    // UWidgetBlueprintLibrary::SetInputMode_GameAndUI(this, nullptr, false, false);
     bIsGameInputBlocked = true;
-    // bShowMouseCursor = true;
 }
 
 // Разблокировка игрового ввода
 void ASandboxPlayerController::UnblockGameInput() {
-    // UWidgetBlueprintLibrary::SetInputMode_GameOnly(this);
     bIsGameInputBlocked = false;
-    // bShowMouseCursor = false;
 }
 
 // Трассировка и выбор объекта действия
@@ -240,7 +226,6 @@ FHitResult ASandboxPlayerController::TracePlayerActionPoint() {
 
         if (SandboxCharacter->GetSandboxPlayerView() == PlayerView::THIRD_PERSON) {
             if (SandboxCharacter->GetCameraBoom() != nullptr) {
-                // MaxUseDistance = Character->GetCameraBoom()->TargetArmLength + MaxUseDistance;
             }
         }
 
