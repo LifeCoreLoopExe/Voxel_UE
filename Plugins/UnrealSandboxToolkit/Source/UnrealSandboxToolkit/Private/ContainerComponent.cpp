@@ -305,7 +305,7 @@ bool UContainerComponent::SlotTransfer(int32 SlotSourceId, int32 SlotTargetId, A
 					if (TargetContainer->IsSlotEmpty(SlotTargetId)) {
 						NewTargetStack = NewSourceStack;
 						NewTargetStack.Amount = 1;
-						NewSourceStack.Amount--;
+						NewSourceStack.Amount--; /////asdasdasdassadasda
 						bResult = true;
 					}
 				}
